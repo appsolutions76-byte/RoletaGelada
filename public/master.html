@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Admin - Roleta Gelada Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col">
+    
+    <!-- TELA DE LOGIN DO DONO -->
+    <div id="auth-screen" class="flex-grow flex items-center justify-center p-4">
+        <div class="bg-gray-800 p-8 rounded-2xl shadow-2xl border border-gray-700 max-w-sm w-full">
+            <div class="text-center mb-6">
+                <span class="text-4xl mb-2 block">👑</span>
+                <h2 class="text-2xl font-black text-white">Acesso Restrito</h2>
+                <p class="text-gray-400 text-sm">Apenas appsolutions76@gmail.com</p>
+            </div>
+            
+            <div class="space-y-4">
+                <input type="email" id="auth-email" value="appsolutions76@gmail.com" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none" disabled>
+                <input type="password" id="auth-password" placeholder="Sua Senha" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none">
+                
+                <button onclick="handleLogin()" class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-black py-3 rounded-lg hover:opacity-90">Entrar no Cofre</button>
+                <button onclick="handleSignUpMaster()" class="w-full text-xs text-gray-500 underline text-center block pt-2">Criar minha senha de dono (1º acesso)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAINEL PRINCIPAL -->
+    <div id="dashboard-screen" class="hidden w-full">
+        <nav class="bg-black/50 p-4 border-b border-gray-800 flex justify-between items-center sticky top-0 z-50">
+            <h1 class="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500">Roleta Gelada - SUPER ADMIN</h1>
+            <button onclick="logout()" class="text-sm font-bold text-gray-400 underline">Sair 🔒</button>
+        </nav>
+
+        <main class="max-w-6xl mx-auto p-6 space-y-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-xl">
+                    <h3 class="text-gray-400 font-bold mb-2">Bares Parceiros</h3>
+                    <p id="kpi-bars" class="text-4xl font-black text-white">0</p>
+                </div>
+                <div class="bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-xl">
+                    <h3 class="text-gray-400 font-bold mb-2">Total de Giros</h3>
+                    <p id="kpi-rounds" class="text-4xl font-black text-cyan-400">0</p>
+                </div>
+                <div class="bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-xl">
+                    <h3 class="text-gray-400 font-bold mb-2">Faturamento Bruto</h3>
+                    <p id="kpi-revenue" class="text-4xl font-black text-green-400">R$ 0,00</p>
+                </div>
+                <div class="bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-xl">
+                    <h3 class="text-gray-400 font-bold mb-2">Seu Lucro (Aprox.)</h3>
+                    <p id="kpi-profit" class="text-4xl font-black text-yellow-400">R$ 0,00</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="bg-gray-800 p-6 rounded-2xl border border-gray-700 lg:col-span-1">
+                    <h2 class="text-2xl font-bold mb-6 text-white">⚙️ Taxas Globais</h2>
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">Sua Taxa por Giro (%)</label>
+                            <input type="number" id="input-fee" step="0.01" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">Markup Multiplicador</label>
+                            <input type="number" id="input-markup" step="0.1" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white">
+                        </div>
+                        <button onclick="saveSettings()" id="btn-save" class="w-full bg-cyan-600 text-white font-black py-4 rounded-xl shadow-lg hover:bg-cyan-500">SALVAR TAXAS</button>
+                    </div>
+                </div>
+
+                <div class="bg-gray-800 p-6 rounded-2xl border border-gray-700 lg:col-span-2">
+                    <h2 class="text-2xl font-bold mb-6 text-white">🏪 Bares Parceiros</h2>
+                    <table class="w-full text-left">
+                        <thead class="text-gray-400 text-sm border-b border-gray-700"><tr class="pb-3"><th class="pb-3">Nome</th><th class="pb-3">Mercado Pago</th></tr></thead>
+                        <tbody id="table-bars" class="text-sm"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let settingsId = null;
+
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (session && session.user.email === 'appsolutions76@gmail.com') {
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('dashboard-screen').classList.remove('hidden');
+                loadMasterData();
+            } else {
+                document.getElementById('auth-screen').classList.remove('hidden');
+                document.getElementById('dashboard-screen').classList.add('hidden');
+            }
+        });
+
+        async function handleLogin() {
+            const p = document.getElementById('auth-password').value;
+            const { error } = await supabase.auth.signInWithPassword({ email: 'appsolutions76@gmail.com', password: p });
+            if (error) alert(error.message);
+        }
+
+        async function handleSignUpMaster() {
+            const p = document.getElementById('auth-password').value;
+            if(!p || p.length < 6) return alert("Digite uma senha de pelo menos 6 caracteres.");
+            const { error } = await supabase.auth.signUp({ email: 'appsolutions76@gmail.com', password: p });
+            if (error) alert(error.message); else alert("Conta de dono criada. Confirme o e-mail (ou desative a confirmação de e-mail no Supabase) para logar.");
+        }
+        
+        async function logout() { await supabase.auth.signOut(); }
+
+        async function loadMasterData() {
+            const { data: settings } = await supabase.from('platform_settings').select('*').limit(1).single();
+            if (settings) {
+                settingsId = settings.id;
+                document.getElementById('input-fee').value = (settings.platform_fee_percentage * 100).toFixed(2);
+                document.getElementById('input-markup').value = settings.markup_multiplier.toFixed(2);
+            }
+
+            const { data: bars } = await supabase.from('bars').select('*');
+            document.getElementById('kpi-bars').innerText = bars.length;
+            const tbody = document.getElementById('table-bars'); tbody.innerHTML = '';
+            bars.forEach(b => {
+                const mp = b.mp_access_token ? "✅" : "❌";
+                tbody.innerHTML += `<tr class="border-b border-gray-700/50"><td class="py-4 font-bold">${b.name}</td><td class="py-4">${mp}</td></tr>`;
+            });
+
+            const { data: rounds } = await supabase.from('rounds').select('bet_amount, status');
+            const paid = rounds.filter(r => ['paid','spinning','completed'].includes(r.status));
+            document.getElementById('kpi-rounds').innerText = paid.length;
+            const rev = paid.reduce((acc, curr) => acc + Number(curr.bet_amount), 0);
+            document.getElementById('kpi-revenue').innerText = `R$ ${rev.toFixed(2)}`;
+            if (settings) document.getElementById('kpi-profit').innerText = `R$ ${(rev * settings.platform_fee_percentage).toFixed(2)}`;
+        }
+
+        async function saveSettings() {
+            const fee = Number(document.getElementById('input-fee').value) / 100;
+            const markup = Number(document.getElementById('input-markup').value);
+            const { error } = await supabase.from('platform_settings').update({ platform_fee_percentage: fee, markup_multiplier: markup }).eq('id', settingsId);
+            if (error) alert(error.message); else { alert("Salvo!"); loadMasterData(); }
+        }
+    </script>
+</body>
+</html>

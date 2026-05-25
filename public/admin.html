@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel do Bar - Roleta Gelada</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-50 min-h-screen text-gray-800">
+    
+    <!-- TELA DE LOGIN / CADASTRO -->
+    <div id="auth-screen" class="min-h-screen flex items-center justify-center p-4 bg-gray-100">
+        <div class="bg-white p-8 rounded-xl shadow-lg max-w-md w-full">
+            <h2 class="text-2xl font-bold mb-6 text-center text-blue-600">Área do Parceiro</h2>
+            
+            <div class="space-y-4">
+                <input type="text" id="auth-bar-name" placeholder="Nome do seu Bar (Apenas Cadastro)" class="w-full border p-3 rounded">
+                <input type="email" id="auth-email" placeholder="E-mail" class="w-full border p-3 rounded">
+                <input type="password" id="auth-password" placeholder="Senha" class="w-full border p-3 rounded">
+                
+                <div class="flex gap-2 pt-2">
+                    <button onclick="handleLogin()" class="w-1/2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded transition">Entrar</button>
+                    <button onclick="handleSignUp()" class="w-1/2 bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded transition">Criar Conta</button>
+                </div>
+                <p id="auth-error" class="text-red-500 text-sm text-center font-bold hidden"></p>
+                <p class="text-xs text-gray-400 text-center mt-4">Para cadastrar, preencha o Nome do Bar, e-mail e senha e clique em Criar Conta. Você precisará confirmar o e-mail.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAINEL PRINCIPAL (Oculto inicialmente) -->
+    <div id="dashboard-screen" class="hidden">
+        <nav class="bg-blue-600 text-white p-4 shadow-md flex justify-between items-center">
+            <h1 class="text-xl font-bold" id="nav-bar-name">Painel do Bar</h1>
+            <div class="flex items-center gap-4">
+                <button onclick="copyAppUrl()" class="bg-white/20 px-3 py-1 rounded text-sm hover:bg-white/30 transition">Copiar Link pro Cliente</button>
+                <button onclick="logout()" class="text-sm underline font-bold">Sair</button>
+            </div>
+        </nav>
+
+        <main class="max-w-4xl mx-auto p-6 mt-6 space-y-8">
+            <!-- Auth MP -->
+            <section class="bg-white p-6 rounded-xl shadow border border-gray-200">
+                <h2 class="text-2xl font-bold mb-2">Conta Mercado Pago</h2>
+                <p class="text-gray-600 mb-4">Conecte sua conta do Mercado Pago para receber o dinheiro das jogadas (Pix) direto na sua conta.</p>
+                <div id="mp-status" class="mb-4 font-semibold text-red-500">❌ Não conectado</div>
+                <a id="btn-connect-mp" href="#" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded shadow transition">
+                    Conectar Mercado Pago
+                </a>
+            </section>
+
+            <!-- Meus Prêmios -->
+            <section class="bg-white p-6 rounded-xl shadow border border-gray-200">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold">Meus Prêmios</h2>
+                    <button onclick="document.getElementById('modal-prize').classList.remove('hidden')" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm font-bold">
+                        + Novo Prêmio
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100 text-gray-600 text-sm">
+                                <th class="p-3 border-b">Nome</th>
+                                <th class="p-3 border-b">Valor Aposta</th>
+                                <th class="p-3 border-b">Custo Real</th>
+                                <th class="p-3 border-b">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-prizes"></tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal Novo Prêmio -->
+    <div id="modal-prize" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white p-6 rounded-xl w-full max-w-md">
+            <h3 class="text-xl font-bold mb-4">Cadastrar Novo Prêmio</h3>
+            <div class="space-y-4">
+                <input type="text" id="prize-name" placeholder="Nome (ex: Heineken)" class="w-full border p-2 rounded">
+                <div class="flex gap-4">
+                    <div class="w-1/2">
+                        <label class="text-xs font-bold text-gray-500">Custo Real</label>
+                        <input type="number" id="prize-cost" step="0.01" class="w-full border p-2 rounded" placeholder="10.00">
+                    </div>
+                    <div class="w-1/2">
+                        <label class="text-xs font-bold text-gray-500">Valor do Giro</label>
+                        <input type="number" id="prize-bet" step="0.01" class="w-full border p-2 rounded" placeholder="2.00">
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-2">
+                <button onclick="document.getElementById('modal-prize').classList.add('hidden')" class="px-4 py-2 text-gray-500">Cancelar</button>
+                <button onclick="savePrize()" class="px-4 py-2 bg-blue-600 text-white font-bold rounded">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Substitua no Deploy pelas chaves do Supabase
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        let BAR_ID = null;
+
+        // -- Autenticação --
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (session) {
+                BAR_ID = session.user.id;
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('dashboard-screen').classList.remove('hidden');
+                loadDashboard();
+            } else {
+                document.getElementById('auth-screen').classList.remove('hidden');
+                document.getElementById('dashboard-screen').classList.add('hidden');
+            }
+        });
+
+        async function handleLogin() {
+            const e = document.getElementById('auth-email').value;
+            const p = document.getElementById('auth-password').value;
+            const { error } = await supabase.auth.signInWithPassword({ email: e, password: p });
+            if (error) showError(error.message);
+        }
+
+        async function handleSignUp() {
+            const n = document.getElementById('auth-bar-name').value;
+            const e = document.getElementById('auth-email').value;
+            const p = document.getElementById('auth-password').value;
+            
+            if(!n) return showError("Preencha o Nome do Bar para cadastrar.");
+
+            const { error } = await supabase.auth.signUp({ 
+                email: e, 
+                password: p,
+                options: { data: { bar_name: n } }
+            });
+            if (error) showError(error.message);
+            else alert("Conta criada! Verifique seu e-mail para confirmar (ou libere o login no painel do Supabase).");
+        }
+
+        async function logout() { await supabase.auth.signOut(); }
+
+        function showError(msg) {
+            const el = document.getElementById('auth-error');
+            el.innerText = msg; el.classList.remove('hidden');
+            setTimeout(() => el.classList.add('hidden'), 5000);
+        }
+
+        // -- Dashboard --
+        async function loadDashboard() {
+            const { data: bar } = await supabase.from('bars').select('*').eq('id', BAR_ID).single();
+            if(!bar) return;
+
+            document.getElementById('nav-bar-name').innerText = bar.name;
+
+            if (bar.mp_access_token) {
+                document.getElementById('mp-status').innerHTML = "✅ Conectado ao Mercado Pago";
+                document.getElementById('mp-status').className = "mb-4 font-semibold text-green-600";
+                document.getElementById('btn-connect-mp').classList.add('hidden');
+            } else {
+                const CLIENT_ID = 'SEU_MERCADO_PAGO_APP_CLIENT_ID'; // Edite no código
+                document.getElementById('btn-connect-mp').href = `https://auth.mercadopago.com/authorization?client_id=${CLIENT_ID}&response_type=code&platform_id=mp&state=${BAR_ID}&redirect_uri=${SUPABASE_URL}/functions/v1/mp-oauth`;
+            }
+
+            const { data: prizes } = await supabase.from('prizes').select('*').eq('bar_id', BAR_ID);
+            const tbody = document.getElementById('table-prizes');
+            tbody.innerHTML = '';
+            prizes.forEach(p => {
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="p-3 font-semibold">${p.name}</td>
+                        <td class="p-3 text-blue-600 font-bold">R$ ${p.bet_amount}</td>
+                        <td class="p-3 text-red-500">R$ ${p.prize_cost}</td>
+                        <td class="p-3"><button onclick="deletePrize('${p.id}')" class="text-red-500 text-xs uppercase font-bold underline">Excluir</button></td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function savePrize() {
+            const name = document.getElementById('prize-name').value;
+            const cost = document.getElementById('prize-cost').value;
+            const bet = document.getElementById('prize-bet').value;
+            
+            await supabase.from('prizes').insert([{ bar_id: BAR_ID, name, prize_cost: cost, bet_amount: bet }]);
+            document.getElementById('modal-prize').classList.add('hidden');
+            loadDashboard();
+        }
+
+        async function deletePrize(id) {
+            if(confirm("Deseja realmente excluir este prêmio?")) {
+                await supabase.from('prizes').delete().eq('id', id);
+                loadDashboard();
+            }
+        }
+
+        function copyAppUrl() {
+            // A URL do app com o ID do bar na query string para o QR Code
+            const appUrl = `${window.location.origin}/index.html?bar=${BAR_ID}`;
+            navigator.clipboard.writeText(appUrl);
+            alert("Link copiado! Coloque essa URL num Gerador de QR Code grátis na internet e imprima pro bar.");
+        }
+    </script>
+</body>
+</html>
