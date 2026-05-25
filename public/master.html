@@ -106,10 +106,20 @@
         }
 
         async function handleSignUpMaster() {
-            const p = document.getElementById('auth-password').value;
-            if(!p || p.length < 6) return alert("Digite uma senha de pelo menos 6 caracteres.");
-            const { error } = await supabase.auth.signUp({ email: 'appsolutions76@gmail.com', password: p });
-            if (error) alert(error.message); else alert("Conta de dono criada. Confirme o e-mail (ou desative a confirmação de e-mail no Supabase) para logar.");
+            console.log("handleSignUpMaster START");
+            try {
+                const p = document.getElementById('auth-password').value;
+                console.log("Password length:", p.length);
+                if(!p || p.length < 6) return alert("Digite uma senha de pelo menos 6 caracteres.");
+                console.log("Calling supabase.auth.signUp...");
+                const { data, error } = await supabase.auth.signUp({ email: 'appsolutions76@gmail.com', password: p });
+                console.log("SignUp response:", {data, error});
+                if (error) alert("ERRO SUPABASE: " + error.message); 
+                else alert("Conta de dono criada. Confirme o e-mail (ou desative a confirmação de e-mail no Supabase) para logar.");
+            } catch (err) {
+                console.error("FATAL CATCH ERROR:", err);
+                alert("Erro fatal no código: " + err.message);
+            }
         }
         
         async function logout() { await supabase.auth.signOut(); }

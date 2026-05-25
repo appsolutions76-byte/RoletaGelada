@@ -7,68 +7,68 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="bg-gray-50 min-h-screen text-gray-800">
+<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col">
     
     <!-- TELA DE LOGIN / CADASTRO -->
-    <div id="auth-screen" class="min-h-screen flex items-center justify-center p-4 bg-gray-100">
-        <div class="bg-white p-8 rounded-xl shadow-lg max-w-md w-full">
-            <h2 class="text-2xl font-bold mb-6 text-center text-blue-600">Área do Parceiro</h2>
+    <div id="auth-screen" class="flex-grow flex items-center justify-center p-4">
+        <div class="bg-gray-800 p-8 rounded-2xl shadow-2xl border border-gray-700 max-w-sm w-full">
+            <h2 class="text-2xl font-black mb-6 text-center text-white">Área do Parceiro</h2>
             
             <div class="space-y-4">
-                <input type="text" id="auth-bar-name" placeholder="Nome do seu Bar (Apenas Cadastro)" class="w-full border p-3 rounded">
-                <input type="email" id="auth-email" placeholder="E-mail" class="w-full border p-3 rounded">
-                <input type="password" id="auth-password" placeholder="Senha" class="w-full border p-3 rounded">
+                <input type="text" id="auth-bar-name" placeholder="Nome do seu Bar (Apenas Cadastro)" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none">
+                <input type="email" id="auth-email" placeholder="E-mail" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none">
+                <input type="password" id="auth-password" placeholder="Senha" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none">
                 
                 <div class="flex gap-2 pt-2">
-                    <button onclick="handleLogin()" class="w-1/2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded transition">Entrar</button>
-                    <button onclick="handleSignUp()" class="w-1/2 bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded transition">Criar Conta</button>
+                    <button onclick="handleLogin()" class="w-1/2 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg transition">Entrar</button>
+                    <button onclick="handleSignUp()" class="w-1/2 bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-lg transition">Criar Conta</button>
                 </div>
-                <p id="auth-error" class="text-red-500 text-sm text-center font-bold hidden"></p>
-                <p class="text-xs text-gray-400 text-center mt-4">Para cadastrar, preencha o Nome do Bar, e-mail e senha e clique em Criar Conta. Você precisará confirmar o e-mail.</p>
+                <p id="auth-error" class="text-red-400 text-sm text-center font-bold hidden"></p>
+                <p class="text-xs text-gray-500 text-center mt-4">Para cadastrar, preencha o Nome do Bar, e-mail e senha e clique em Criar Conta.</p>
             </div>
         </div>
     </div>
 
-    <!-- PAINEL PRINCIPAL (Oculto inicialmente) -->
-    <div id="dashboard-screen" class="hidden">
-        <nav class="bg-blue-600 text-white p-4 shadow-md flex justify-between items-center">
-            <h1 class="text-xl font-bold" id="nav-bar-name">Painel do Bar</h1>
+    <!-- PAINEL PRINCIPAL -->
+    <div id="dashboard-screen" class="hidden w-full">
+        <nav class="bg-black/50 p-4 border-b border-gray-800 flex justify-between items-center sticky top-0 z-50">
+            <h1 class="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500" id="nav-bar-name">Painel do Bar</h1>
             <div class="flex items-center gap-4">
-                <button onclick="copyAppUrl()" class="bg-white/20 px-3 py-1 rounded text-sm hover:bg-white/30 transition">Copiar Link pro Cliente</button>
-                <button onclick="logout()" class="text-sm underline font-bold">Sair</button>
+                <button onclick="copyAppUrl()" class="bg-blue-600/20 text-blue-400 border border-blue-500/30 px-3 py-1 rounded-lg text-sm hover:bg-blue-600/30 font-bold transition">Copiar Link pro Cliente</button>
+                <button onclick="logout()" class="text-sm font-bold text-gray-400 underline">Sair 🔒</button>
             </div>
         </nav>
 
         <main class="max-w-4xl mx-auto p-6 mt-6 space-y-8">
             <!-- Auth MP -->
-            <section class="bg-white p-6 rounded-xl shadow border border-gray-200">
-                <h2 class="text-2xl font-bold mb-2">Conta Mercado Pago</h2>
-                <p class="text-gray-600 mb-4">Conecte sua conta do Mercado Pago para receber o dinheiro das jogadas (Pix) direto na sua conta.</p>
-                <div id="mp-status" class="mb-4 font-semibold text-red-500">❌ Não conectado</div>
-                <a id="btn-connect-mp" href="#" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded shadow transition">
+            <section class="bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-700">
+                <h2 class="text-2xl font-bold mb-2 text-white">Conta Mercado Pago</h2>
+                <p class="text-gray-400 mb-4">Conecte sua conta do Mercado Pago para receber o dinheiro das jogadas (Pix) direto na sua conta.</p>
+                <div id="mp-status" class="mb-4 font-bold text-red-400">❌ Não conectado</div>
+                <a id="btn-connect-mp" href="#" class="inline-block bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-3 rounded-lg shadow transition">
                     Conectar Mercado Pago
                 </a>
             </section>
 
             <!-- Meus Prêmios -->
-            <section class="bg-white p-6 rounded-xl shadow border border-gray-200">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-2xl font-bold">Meus Prêmios</h2>
-                    <button onclick="document.getElementById('modal-prize').classList.remove('hidden')" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm font-bold">
+            <section class="bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-700">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-white">Meus Prêmios</h2>
+                    <button onclick="document.getElementById('modal-prize').classList.remove('hidden')" class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-bold transition">
                         + Novo Prêmio
                     </button>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>
-                            <tr class="bg-gray-100 text-gray-600 text-sm">
-                                <th class="p-3 border-b">Nome</th>
-                                <th class="p-3 border-b">Valor Aposta</th>
-                                <th class="p-3 border-b">Custo Real</th>
-                                <th class="p-3 border-b">Ação</th>
+                            <tr class="bg-gray-900 text-gray-400 text-sm border-b border-gray-700">
+                                <th class="p-3">Nome</th>
+                                <th class="p-3">Valor Aposta</th>
+                                <th class="p-3">Custo Real</th>
+                                <th class="p-3 text-right">Ação</th>
                             </tr>
                         </thead>
-                        <tbody id="table-prizes"></tbody>
+                        <tbody id="table-prizes" class="text-sm"></tbody>
                     </table>
                 </div>
             </section>
@@ -76,25 +76,25 @@
     </div>
 
     <!-- Modal Novo Prêmio -->
-    <div id="modal-prize" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-        <div class="bg-white p-6 rounded-xl w-full max-w-md">
-            <h3 class="text-xl font-bold mb-4">Cadastrar Novo Prêmio</h3>
+    <div id="modal-prize" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+        <div class="bg-gray-800 p-6 rounded-2xl border border-gray-700 w-full max-w-md shadow-2xl">
+            <h3 class="text-xl font-bold mb-4 text-white">Cadastrar Novo Prêmio</h3>
             <div class="space-y-4">
-                <input type="text" id="prize-name" placeholder="Nome (ex: Heineken)" class="w-full border p-2 rounded">
+                <input type="text" id="prize-name" placeholder="Nome (ex: Heineken)" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none">
                 <div class="flex gap-4">
                     <div class="w-1/2">
-                        <label class="text-xs font-bold text-gray-500">Custo Real</label>
-                        <input type="number" id="prize-cost" step="0.01" class="w-full border p-2 rounded" placeholder="10.00">
+                        <label class="text-xs font-bold text-gray-500 mb-1 block">Custo Real (R$)</label>
+                        <input type="number" id="prize-cost" step="0.01" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none" placeholder="10.00">
                     </div>
                     <div class="w-1/2">
-                        <label class="text-xs font-bold text-gray-500">Valor do Giro</label>
-                        <input type="number" id="prize-bet" step="0.01" class="w-full border p-2 rounded" placeholder="2.00">
+                        <label class="text-xs font-bold text-gray-500 mb-1 block">Valor do Giro (R$)</label>
+                        <input type="number" id="prize-bet" step="0.01" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none" placeholder="2.00">
                     </div>
                 </div>
             </div>
-            <div class="mt-6 flex justify-end gap-2">
-                <button onclick="document.getElementById('modal-prize').classList.add('hidden')" class="px-4 py-2 text-gray-500">Cancelar</button>
-                <button onclick="savePrize()" class="px-4 py-2 bg-blue-600 text-white font-bold rounded">Salvar</button>
+            <div class="mt-6 flex justify-end gap-3">
+                <button onclick="document.getElementById('modal-prize').classList.add('hidden')" class="px-4 py-2 text-gray-400 hover:text-white font-bold">Cancelar</button>
+                <button onclick="savePrize()" class="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition">Salvar</button>
             </div>
         </div>
     </div>
@@ -172,11 +172,11 @@
             tbody.innerHTML = '';
             prizes.forEach(p => {
                 tbody.innerHTML += `
-                    <tr class="border-b hover:bg-gray-50">
-                        <td class="p-3 font-semibold">${p.name}</td>
-                        <td class="p-3 text-blue-600 font-bold">R$ ${p.bet_amount}</td>
-                        <td class="p-3 text-red-500">R$ ${p.prize_cost}</td>
-                        <td class="p-3"><button onclick="deletePrize('${p.id}')" class="text-red-500 text-xs uppercase font-bold underline">Excluir</button></td>
+                    <tr class="border-b border-gray-700/50 hover:bg-white/5 transition">
+                        <td class="p-3 font-semibold text-white">${p.name}</td>
+                        <td class="p-3 text-cyan-400 font-bold">R$ ${p.bet_amount}</td>
+                        <td class="p-3 text-gray-400">R$ ${p.prize_cost}</td>
+                        <td class="p-3 text-right"><button onclick="deletePrize('${p.id}')" class="text-red-400 hover:text-red-300 text-xs uppercase font-bold underline transition">Excluir</button></td>
                     </tr>
                 `;
             });
