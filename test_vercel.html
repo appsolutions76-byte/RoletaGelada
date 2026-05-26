@@ -71,35 +71,23 @@
         let prizeName = '';
 
         async function loadPrizes() {
-            try {
-                const { data: bar, error: barErr } = await supabase.from('bars').select('name').eq('id', BAR_ID).single();
-                if (barErr && barErr.code !== 'PGRST116') throw barErr;
-                if (bar) document.getElementById('bar-name').innerText = bar.name;
+            const { data: bar } = await supabase.from('bars').select('name').eq('id', BAR_ID).single();
+            if(bar) document.getElementById('bar-name').innerText = bar.name;
 
-                const { data: prizes, error: prizesErr } = await supabase.from('prizes').select('*').eq('bar_id', BAR_ID).eq('active', true);
-                if (prizesErr) throw prizesErr;
-
-                const list = document.getElementById('prizes-list');
-                list.innerHTML = '';
-                
-                if (!prizes || prizes.length === 0) {
-                    list.innerHTML = '<p class="text-center text-yellow-400">Nenhum prêmio disponível neste bar.</p>';
-                    return;
-                }
-
-                prizes.forEach(p => {
-                    const div = document.createElement('div');
-                    div.className = "flex justify-between items-center p-4 glass rounded-xl cursor-pointer hover:bg-white/10 transition";
-                    div.innerHTML = `
-                        <div><h3 class="font-bold text-lg">${p.name}</h3><p class="text-sm text-gray-400">Custo do bar: R$ ${p.prize_cost}</p></div>
-                        <div class="text-right"><span class="block font-bold text-cyan-400">Aposta: R$ ${p.bet_amount}</span></div>
-                    `;
-                    div.onclick = () => selectPrize(p);
-                    list.appendChild(div);
-                });
-            } catch (err) {
-                document.getElementById('prizes-list').innerHTML = `<p class="text-center text-red-500 font-bold">Erro: ${err.message || JSON.stringify(err)}</p>`;
-            }
+            const { data: prizes } = await supabase.from('prizes').select('*').eq('bar_id', BAR_ID).eq('active', true);
+            const list = document.getElementById('prizes-list');
+            list.innerHTML = '';
+            
+            prizes.forEach(p => {
+                const div = document.createElement('div');
+                div.className = "flex justify-between items-center p-4 glass rounded-xl cursor-pointer hover:bg-white/10 transition";
+                div.innerHTML = `
+                    <div><h3 class="font-bold text-lg">${p.name}</h3><p class="text-sm text-gray-400">Custo do bar: R$ ${p.prize_cost}</p></div>
+                    <div class="text-right"><span class="block font-bold text-cyan-400">Aposta: R$ ${p.bet_amount}</span></div>
+                `;
+                div.onclick = () => selectPrize(p);
+                list.appendChild(div);
+            });
         }
         
         function selectPrize(p) {
