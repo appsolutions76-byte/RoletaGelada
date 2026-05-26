@@ -3,208 +3,281 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Roleta Gelada Pro</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <title>Roleta Gelada</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     
     <style>
-        body { background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); color: white; font-family: 'Inter', sans-serif; overflow-x: hidden; }
-        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        canvas { border-radius: 50%; box-shadow: 0 0 20px rgba(56, 189, 248, 0.5); transition: transform 4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .pointer { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 25px solid #ef4444; z-index: 10; }
+        body { 
+            background: #0f172a; 
+            color: white; 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }
+        .container {
+            width: 100%;
+            max-width: 400px;
+            background: #1e293b;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            text-align: center;
+            box-sizing: border-box;
+        }
+        h1 { color: #38bdf8; font-size: 24px; margin-bottom: 5px; }
+        .subtitle { color: #94a3b8; font-size: 14px; margin-top: 0; margin-bottom: 20px; }
+        
+        .prize-card {
+            background: #334155;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .prize-card:hover { background: #475569; }
+        .prize-name { font-weight: bold; font-size: 18px; margin: 0; text-align: left; }
+        .prize-price { color: #38bdf8; font-weight: bold; font-size: 16px; margin: 0; }
+        
+        button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .btn-blue { background: #2563eb; color: white; }
+        .btn-green { background: #16a34a; color: white; margin-top: 20px; }
+        
+        .hidden { display: none !important; }
+        #qr-container { display: flex; justify-content: center; margin: 20px 0; background: white; padding: 10px; border-radius: 10px; width: fit-content; margin-left: auto; margin-right: auto; }
+        
+        /* Roleta Simples */
+        .roleta-box { position: relative; margin: 30px auto; width: 250px; height: 250px; }
+        .roleta-pointer {
+            position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
+            width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 25px solid #ef4444; z-index: 10;
+        }
+        .roleta-wheel {
+            width: 100%; height: 100%; border-radius: 50%; border: 5px solid #38bdf8;
+            background: conic-gradient(#0f172a 0% 16.6%, #1e293b 16.6% 33.3%, #0f172a 33.3% 50%, #1e293b 50% 66.6%, #0f172a 66.6% 83.3%, #1e293b 83.3% 100%);
+            transition: transform 4s cubic-bezier(0.1, 0.7, 0.1, 1);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .roleta-text { position: absolute; font-weight: bold; font-size: 20px; color: #38bdf8; text-shadow: 0 0 10px black; }
+        
+        .error-msg { color: #ef4444; font-weight: bold; padding: 10px; border: 1px solid #ef4444; border-radius: 5px; background: rgba(239, 68, 68, 0.1); }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center py-10 px-4">
-    <header class="text-center mb-8">
-        <h1 class="text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500">Roleta Gelada</h1>
-        <p class="text-gray-400 mt-2" id="bar-name">Carregando...</p>
-    </header>
+<body>
 
-    <main class="w-full max-w-md glass rounded-3xl p-6 shadow-2xl flex flex-col items-center">
-        <!-- Step 1: Catalog -->
-        <div id="step-catalog" class="w-full">
-            <h2 class="text-xl font-bold mb-4 text-center">Escolha o seu prêmio</h2>
-            <div id="prizes-list" class="space-y-3">
-                <p class="text-center text-sm text-gray-400">Buscando prêmios...</p>
+    <div class="container">
+        <h1>Roleta Gelada</h1>
+        <p class="subtitle" id="bar-name">Carregando...</p>
+
+        <!-- Etapa 1: Lista -->
+        <div id="step-list">
+            <h2 style="font-size:18px; margin-bottom: 20px;">Escolha o Prêmio</h2>
+            <div id="prizes-container">
+                <p style="color:#94a3b8;">Buscando...</p>
             </div>
         </div>
 
-        <!-- Step 2: Pay -->
-        <div id="step-pay" class="hidden w-full text-center flex flex-col items-center">
-            <h2 class="text-xl font-bold mb-2">Aposta: R$ <span id="display-bet">0,00</span></h2>
-            <p class="text-sm text-gray-400 mb-4">Prêmio: <span id="display-prize">...</span></p>
-            <button id="btn-generate-pix" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl text-lg transition shadow-lg active:scale-95">Pagar com Pix</button>
-            <div id="pix-container" class="hidden mt-6 flex flex-col items-center">
-                <div id="pix-qr" class="bg-white p-2 rounded-lg mb-4"></div>
-                <button id="btn-copy-pix" class="text-cyan-400 font-semibold underline">Copiar Código Pix</button>
-                <p class="text-xs text-yellow-400 mt-4 animate-pulse">Aguardando pagamento...</p>
+        <!-- Etapa 2: Pagar -->
+        <div id="step-pay" class="hidden">
+            <h2 style="font-size:22px; margin-bottom: 5px;">Aposta: R$ <span id="lbl-bet">0.00</span></h2>
+            <p style="color:#94a3b8; margin-top:0;">Concorrendo a: <span id="lbl-prize"></span></p>
+            
+            <button class="btn-blue" id="btn-gerar-pix" onclick="generatePix()">Pagar com Pix</button>
+            
+            <div id="pix-area" class="hidden">
+                <p style="color:#facc15; font-size: 14px; margin-top: 15px;">Aguardando pagamento...</p>
+                <div id="qr-container"></div>
+                <!-- Botão dinâmico será injetado aqui -->
             </div>
         </div>
 
-        <!-- Step 3: Spin -->
-        <div id="step-spin" class="hidden w-full flex flex-col items-center">
-            <div class="relative w-[300px] h-[300px] mb-8 mt-4">
-                <div class="pointer"></div>
-                <canvas id="roulette-canvas" width="300" height="300"></canvas>
+        <!-- Etapa 3: Roleta -->
+        <div id="step-spin" class="hidden">
+            <div class="roleta-box">
+                <div class="roleta-pointer"></div>
+                <div class="roleta-wheel" id="wheel">
+                    <span class="roleta-text">ROTAÇÃO</span>
+                </div>
             </div>
-            <button id="btn-spin" disabled class="w-full bg-gray-600 text-white font-bold py-4 rounded-xl text-2xl transition shadow-[0_0_15px_rgba(0,0,0,0.5)] uppercase tracking-wider">Girar Agora!</button>
+            <button class="btn-blue" id="btn-girar" onclick="spinRoulette()" disabled>Sorteando...</button>
         </div>
-        
-        <!-- Step 4: Result -->
-        <div id="step-result" class="hidden w-full text-center mt-6">
-            <h2 id="result-title" class="text-3xl font-extrabold mb-4 text-green-400">Você Ganhou!</h2>
-            <div id="prize-qr" class="bg-white p-4 rounded-xl mx-auto w-max mb-4 hidden"></div>
-            <p id="result-desc" class="text-gray-300 mb-6">Apresente este QR Code no balcão.</p>
-            <button onclick="location.reload()" class="w-full bg-transparent border-2 border-blue-500 text-blue-500 font-bold py-3 rounded-xl transition hover:bg-blue-500 hover:text-white">Jogar Novamente</button>
+
+        <!-- Etapa 4: Resultado -->
+        <div id="step-result" class="hidden">
+            <h2 id="result-title" style="font-size: 28px; color: #4ade80;">Parabéns!</h2>
+            <p id="result-desc" style="color:#94a3b8;">Mostre este código no balcão.</p>
+            <div id="result-qr-container" class="hidden"></div>
+            <button class="btn-blue" onclick="location.reload()" style="background:transparent; border:2px solid #38bdf8; color:#38bdf8;">Jogar Novamente</button>
         </div>
-    </main>
+    </div>
 
     <script>
         const SUPABASE_URL = 'https://vjupsdakdxexxcdkqfzf.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqdXBzZGFrZHhleHhjZGtxZnpmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2NjY2NDYsImV4cCI6MjA5NTI0MjY0Nn0.5XKPuhn34s-EUf6NXqNwpZysQoJVsyBIHQeVg4wnyyo';
+        const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqdXBzZGFrZHhleHhjZGtxZnpmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2NjY2NDYsImV4cCI6MjA5NTI0MjY0Nn0.5XKPuhn34s-EUf6NXqNwpZysQoJVsyBIHQeVg4wnyyo';
         
-        let supabase;
-        try {
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        } catch (initErr) {
-            document.addEventListener('DOMContentLoaded', () => {
-                document.getElementById('prizes-list').innerHTML = `<p class="text-red-500 font-bold">Erro crítico de carregamento: O script do Supabase não foi carregado. Desative o AdBlock ou verifique sua conexão. Detalhe: ${initErr.message}</p>`;
-            });
+        const params = new URLSearchParams(window.location.search);
+        const BAR_ID = params.get('bar') || '11111111-1111-1111-1111-111111111111';
+
+        let state = { prizeId: null, prizeName: null, roundId: null };
+
+        // Função Genérica de Fetch (Substitui supabase-js)
+        async function sfetch(endpoint, method = 'GET', body = null) {
+            const options = {
+                method,
+                headers: { 'apikey': ANON_KEY, 'Authorization': `Bearer ${ANON_KEY}`, 'Content-Type': 'application/json' }
+            };
+            if (body) options.body = JSON.stringify(body);
+            const res = await fetch(`${SUPABASE_URL}${endpoint}`, options);
+            if (!res.ok) {
+                const err = await res.text();
+                throw new Error(`Erro API: ${err || res.status}`);
+            }
+            return res.json();
         }
 
-        
-        let BAR_ID = new URLSearchParams(window.location.search).get('bar') || '11111111-1111-1111-1111-111111111111';
-        let currentPrizeId = null;
-        let currentRoundId = null;
-        let prizeName = '';
-
-        async function loadPrizes() {
+        async function init() {
             try {
-                const { data: bar, error: barErr } = await supabase.from('bars').select('name').eq('id', BAR_ID).single();
-                if (barErr && barErr.code !== 'PGRST116') throw barErr;
-                if (bar) document.getElementById('bar-name').innerText = bar.name;
+                // Busca o Bar
+                const bars = await sfetch(`/rest/v1/bars?id=eq.${BAR_ID}&select=name`);
+                if(bars && bars.length > 0) document.getElementById('bar-name').innerText = bars[0].name;
 
-                const { data: prizes, error: prizesErr } = await supabase.from('prizes').select('*').eq('bar_id', BAR_ID).eq('active', true);
-                if (prizesErr) throw prizesErr;
-
-                const list = document.getElementById('prizes-list');
-                list.innerHTML = '';
+                // Busca prêmios
+                const prizes = await sfetch(`/rest/v1/prizes?bar_id=eq.${BAR_ID}&active=eq.true&select=*`);
                 
+                const container = document.getElementById('prizes-container');
+                container.innerHTML = '';
+
                 if (!prizes || prizes.length === 0) {
-                    list.innerHTML = '<p class="text-center text-yellow-400">Nenhum prêmio disponível neste bar.</p>';
+                    container.innerHTML = '<p>Nenhum prêmio disponível.</p>';
                     return;
                 }
 
                 prizes.forEach(p => {
                     const div = document.createElement('div');
-                    div.className = "flex justify-between items-center p-4 glass rounded-xl cursor-pointer hover:bg-white/10 transition";
+                    div.className = 'prize-card';
                     div.innerHTML = `
-                        <div><h3 class="font-bold text-lg">${p.name}</h3><p class="text-sm text-gray-400">Custo do bar: R$ ${p.prize_cost}</p></div>
-                        <div class="text-right"><span class="block font-bold text-cyan-400">Aposta: R$ ${p.bet_amount}</span></div>
+                        <div><p class="prize-name">${p.name}</p></div>
+                        <div><p class="prize-price">R$ ${p.bet_amount.toFixed(2)}</p></div>
                     `;
-                    div.onclick = () => selectPrize(p);
-                    list.appendChild(div);
+                    div.onclick = () => selectPrize(p.id, p.name, p.bet_amount);
+                    container.appendChild(div);
                 });
-            } catch (err) {
-                document.getElementById('prizes-list').innerHTML = `<p class="text-center text-red-500 font-bold">Erro: ${err.message || JSON.stringify(err)}</p>`;
+
+            } catch(e) {
+                document.getElementById('prizes-container').innerHTML = `<p class="error-msg">${e.message}</p>`;
             }
         }
-        
-        function selectPrize(p) {
-            currentPrizeId = p.id;
-            prizeName = p.name;
-            document.getElementById('step-catalog').classList.add('hidden');
+
+        function selectPrize(id, name, bet) {
+            state.prizeId = id;
+            state.prizeName = name;
+            
+            document.getElementById('step-list').classList.add('hidden');
             document.getElementById('step-pay').classList.remove('hidden');
-            document.getElementById('display-bet').innerText = p.bet_amount;
-            document.getElementById('display-prize').innerText = p.name;
+            document.getElementById('lbl-prize').innerText = name;
+            document.getElementById('lbl-bet').innerText = bet.toFixed(2);
         }
 
-        document.getElementById('btn-generate-pix').onclick = async () => {
-            const btn = document.getElementById('btn-generate-pix');
-            btn.disabled = true; btn.innerText = 'Gerando...';
-            try {
-                const { data, error } = await supabase.functions.invoke('create-pix', { body: { prize_id: currentPrizeId } });
-                if (error) throw error;
-                currentRoundId = data.round_id;
-                document.getElementById('pix-qr').innerHTML = "";
-                new QRCode(document.getElementById('pix-qr'), { text: data.qr_code, width: 150, height: 150 });
-                btn.classList.add('hidden');
-                document.getElementById('pix-container').classList.remove('hidden');
+        async function generatePix() {
+            const btn = document.getElementById('btn-gerar-pix');
+            btn.disabled = true; btn.innerText = "Gerando...";
 
-                // Botão Mock para Testes
-                if (data.qr_code.startsWith('MOCK')) {
-                    const btnMock = document.createElement('button');
-                    btnMock.innerText = "Simular Pagamento (Teste)";
-                    btnMock.className = "mt-4 bg-green-500 hover:bg-green-400 text-white font-bold py-2 px-4 rounded-lg shadow transition";
-                    btnMock.onclick = async () => {
-                        btnMock.innerText = "Simulando...";
-                        btnMock.disabled = true;
-                        await fetch(`${SUPABASE_URL}/functions/v1/mp-webhook?topic=payment&external_reference=${currentRoundId}`, { method: 'POST' });
-                    };
-                    document.getElementById('pix-container').appendChild(btnMock);
-                }
+            try {
+                const data = await sfetch(`/functions/v1/create-pix`, 'POST', { prize_id: state.prizeId });
+                state.roundId = data.round_id;
                 
-                supabase.channel(`round-${currentRoundId}`).on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rounds', filter: `id=eq.${currentRoundId}` }, payload => {
-                    if (payload.new.status === 'paid') {
-                        document.getElementById('step-pay').classList.add('hidden');
-                        document.getElementById('step-spin').classList.remove('hidden');
-                        const spinBtn = document.getElementById('btn-spin');
-                        spinBtn.disabled = false;
-                        spinBtn.classList.replace('bg-gray-600', 'bg-green-500');
-                        drawRoulette();
-                    }
-                }).subscribe();
-            } catch (err) { alert("Erro ao gerar Pix: " + err.message); }
-        };
+                btn.classList.add('hidden');
+                document.getElementById('pix-area').classList.remove('hidden');
+                
+                document.getElementById('qr-container').innerHTML = '';
+                new QRCode(document.getElementById('qr-container'), { text: data.qr_code, width: 150, height: 150 });
 
-        const canvas = document.getElementById('roulette-canvas');
-        const ctx = canvas.getContext('2d');
-        function drawRoulette() {
-            const segments = [prizeName, "NADA", "GIRE +1", "NADA", prizeName, "NADA"];
-            const colors = ["#eab308", "#1e293b", "#3b82f6", "#1e293b", "#eab308", "#1e293b"];
-            const arc = Math.PI / (segments.length / 2);
-            for(let i = 0; i < segments.length; i++) {
-                ctx.beginPath(); ctx.fillStyle = colors[i]; ctx.moveTo(150, 150);
-                ctx.arc(150, 150, 150, i * arc, (i + 1) * arc); ctx.fill(); ctx.save();
-                ctx.fillStyle = "white"; ctx.font = "bold 14px Inter";
-                ctx.translate(150 + Math.cos(i * arc + arc / 2) * 100, 150 + Math.sin(i * arc + arc / 2) * 100);
-                ctx.rotate(i * arc + arc / 2 + Math.PI / 2);
-                ctx.fillText(segments[i], -ctx.measureText(segments[i]).width / 2, 0); ctx.restore();
+                if (data.qr_code.startsWith('MOCK')) {
+                    const mockBtn = document.createElement('button');
+                    mockBtn.className = 'btn-green';
+                    mockBtn.innerText = 'Simular Pagamento (Teste)';
+                    mockBtn.onclick = async () => {
+                        mockBtn.innerText = 'Simulando...'; mockBtn.disabled = true;
+                        // Chama o webhook
+                        await sfetch(`/functions/v1/mp-webhook?topic=payment&external_reference=${state.roundId}`, 'POST');
+                        startRoulette();
+                    };
+                    document.getElementById('pix-area').appendChild(mockBtn);
+                }
+
+                // Polling simplificado para verificar se foi pago (para Pix Real)
+                if(!data.qr_code.startsWith('MOCK')) {
+                    setInterval(async () => {
+                        try {
+                            const rounds = await sfetch(`/rest/v1/rounds?id=eq.${state.roundId}&select=status`);
+                            if(rounds && rounds[0] && rounds[0].status === 'paid') {
+                                startRoulette();
+                            }
+                        } catch(e){}
+                    }, 3000);
+                }
+
+            } catch(e) {
+                alert(e.message);
+                btn.disabled = false; btn.innerText = "Tentar Novamente";
             }
         }
 
-        document.getElementById('btn-spin').onclick = async () => {
-            const btn = document.getElementById('btn-spin');
-            btn.disabled = true; btn.innerText = 'Sorteando...';
+        function startRoulette() {
+            document.getElementById('step-pay').classList.add('hidden');
+            document.getElementById('step-spin').classList.remove('hidden');
+            setTimeout(spinRoulette, 500); // Gira automaticamente após meio segundo
+        }
+
+        async function spinRoulette() {
+            const btn = document.getElementById('btn-girar');
+            btn.innerText = "Sorteando...";
+
             try {
-                const { data, error } = await supabase.functions.invoke('spin-roulette', { body: { round_id: currentRoundId } });
-                if (error) throw error;
-                const segments = [prizeName, "NADA", "GIRE +1", "NADA", prizeName, "NADA"];
-                const targetIndex = segments.indexOf(data.prize);
-                const spinAngle = (360 * 5) + (360 - (targetIndex * 60) - 30 + 270);
-                canvas.style.transform = `rotate(${spinAngle}deg)`;
-                setTimeout(() => showResult(data.prize), 4000);
-            } catch (err) { alert("Erro ao girar: " + err.message); }
-        };
+                const data = await sfetch(`/functions/v1/spin-roulette`, 'POST', { round_id: state.roundId });
+                
+                // Animação CSS 
+                const wheel = document.getElementById('wheel');
+                wheel.style.transform = `rotate(${360 * 10}deg)`; // Apenas um giro visual fixo para simplificar
+                
+                setTimeout(() => {
+                    document.getElementById('step-spin').classList.add('hidden');
+                    document.getElementById('step-result').classList.remove('hidden');
+                    
+                    if(data.prize === 'NADA' || data.prize === 'GIRE +1') {
+                        document.getElementById('result-title').innerText = "Que pena!";
+                        document.getElementById('result-title').style.color = "#ef4444";
+                        document.getElementById('result-desc').innerText = "Não foi dessa vez.";
+                    } else {
+                        document.getElementById('result-title').innerText = "Parabéns!";
+                        document.getElementById('result-desc').innerText = `Você ganhou: ${data.prize}. Mostre este QR ao garçom.`;
+                        document.getElementById('result-qr-container').classList.remove('hidden');
+                        document.getElementById('result-qr-container').innerHTML = '';
+                        new QRCode(document.getElementById('result-qr-container'), { text: `REDEEM:${state.roundId}`, width: 150, height: 150 });
+                    }
+                }, 4000);
 
-        function showResult(prize) {
-            document.getElementById('step-spin').classList.add('hidden');
-            document.getElementById('step-result').classList.remove('hidden');
-            const title = document.getElementById('result-title');
-            const desc = document.getElementById('result-desc');
-            const qr = document.getElementById('prize-qr');
-            if (prize !== 'NADA' && prize !== 'GIRE +1') {
-                title.innerText = "🍺 PARABÉNS!"; title.className = "text-3xl font-extrabold mb-4 text-yellow-400";
-                desc.innerText = "Mostre este código no balcão!"; qr.classList.remove('hidden');
-                new QRCode(qr, { text: `REDEEM:${currentRoundId}`, width: 150, height: 150 });
-            } else {
-                title.innerText = "😢 NÃO FOI DESSA VEZ"; title.className = "text-3xl font-extrabold mb-4 text-red-400";
-                desc.innerText = "Tente novamente!";
+            } catch(e) {
+                alert(e.message);
             }
         }
 
-        loadPrizes();
+        // Inicia a aplicação
+        window.onload = init;
     </script>
 </body>
 </html>
