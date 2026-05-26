@@ -146,7 +146,8 @@
                 const err = await res.text();
                 throw new Error(`Erro API: ${err || res.status}`);
             }
-            return res.json();
+            const text = await res.text();
+            try { return JSON.parse(text); } catch(e) { return text; }
         }
 
         async function init() {
