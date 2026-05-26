@@ -38,11 +38,11 @@ serve(async (req) => {
       .eq('prize_id', round.prize_id)
       .single()
 
-    const currentBalance = vault ? vault.accumulated_balance : 0;
+    const currentBalance = vault ? Number(vault.accumulated_balance) : 0;
     
     // A Matemática de Trava
-    const prizeCost = round.prizes.prize_cost;
-    const targetBalance = prizeCost * settings.markup_multiplier; // Ex: 10 * 1.5 = 15
+    const prizeCost = Number(round.prizes.prize_cost);
+    const targetBalance = prizeCost * Number(settings.markup_multiplier); // Ex: 10 * 1.5 = 15
 
     let won = false;
     if (currentBalance >= targetBalance) {
@@ -54,10 +54,16 @@ serve(async (req) => {
 
     if (won) {
       // Deduz o custo da cerveja do cofre
-      await supabaseClient
-        .from('vaults')
-        .update({ accumulated_balance: currentBalance - targetBalance }) // Reseta pagando o custo e lucro
-        .eq('id', vault.id);
+      if (vault) {
+        await supabaseClient
+          .from('vaults')
+          .update({ accumulated_balance: currentBalance - targetBalance }) // Reseta pagando o custo e lucro
+          .eq('id', vault.id);
+      } else {
+        await supabaseClient
+          .from('vaults')
+          .insert({ prize_id: round.prize_id, accumulated_balance: 0 }); // Zera se por acaso ganhou de primeira, o que é raro mas possível se targetBalance for 0
+      }
         
       await supabaseClient.from('rounds').update({ status: 'completed', result: 'WON' }).eq('id', round.id);
       

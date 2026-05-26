@@ -65,7 +65,10 @@ serve(async (req) => {
     const barToken = prize.bars.mp_access_token;
 
     if (!barToken) {
-        throw new Error('Este bar não configurou o Mercado Pago ainda.');
+      return new Response(JSON.stringify({ error: 'Este bar não configurou o Mercado Pago ainda.' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const paymentData: any = {
@@ -77,6 +80,18 @@ serve(async (req) => {
       notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mp-webhook`,
       application_fee: platformFee // Aqui cobramos a taxa gota a gota!
     };
+
+    // 4. Mock para Testes
+    if (barToken === 'TEST-TOKEN') {
+      // Simular um atraso da API
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return new Response(JSON.stringify({ 
+        round_id: round.id,
+        qr_code: `MOCK_QR_CODE_FOR_ROUND_${round.id}`
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {
       method: 'POST',
@@ -93,7 +108,7 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ 
       round_id: round.id,
-      qr_code: mpData.point_of_interaction.transaction_data.qr_code
+      qr_code: mpData.point_of_interaction?.transaction_data?.qr_code || 'QR_CODE_NOT_FOUND'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })

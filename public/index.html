@@ -110,6 +110,19 @@
                 new QRCode(document.getElementById('pix-qr'), { text: data.qr_code, width: 150, height: 150 });
                 btn.classList.add('hidden');
                 document.getElementById('pix-container').classList.remove('hidden');
+
+                // Botão Mock para Testes
+                if (data.qr_code.startsWith('MOCK')) {
+                    const btnMock = document.createElement('button');
+                    btnMock.innerText = "Simular Pagamento (Teste)";
+                    btnMock.className = "mt-4 bg-green-500 hover:bg-green-400 text-white font-bold py-2 px-4 rounded-lg shadow transition";
+                    btnMock.onclick = async () => {
+                        btnMock.innerText = "Simulando...";
+                        btnMock.disabled = true;
+                        await fetch(`${SUPABASE_URL}/functions/v1/mp-webhook?topic=payment&external_reference=${currentRoundId}`, { method: 'POST' });
+                    };
+                    document.getElementById('pix-container').appendChild(btnMock);
+                }
                 
                 supabase.channel(`round-${currentRoundId}`).on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rounds', filter: `id=eq.${currentRoundId}` }, payload => {
                     if (payload.new.status === 'paid') {

@@ -45,9 +45,9 @@ serve(async (req) => {
               const { data: vault } = await supabaseClient.from('vaults').select('*').eq('prize_id', round.prize_id).single();
               
               if (vault) {
-                 await supabaseClient.from('vaults').update({accumulated_balance: vault.accumulated_balance + round.bet_amount}).eq('id', vault.id);
+                 await supabaseClient.from('vaults').update({accumulated_balance: Number(vault.accumulated_balance) + Number(round.bet_amount)}).eq('id', vault.id);
               } else {
-                 await supabaseClient.from('vaults').insert([{prize_id: round.prize_id, accumulated_balance: round.bet_amount}]);
+                 await supabaseClient.from('vaults').insert([{prize_id: round.prize_id, accumulated_balance: Number(round.bet_amount)}]);
               }
           }
       }
