@@ -4,6 +4,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Master Admin - Roleta Gelada Pro</title>
+    <script>
+        window.settingsId = null;
+        window.isSimulationMode = false;
+
+        function handleSimulationLogin() {
+            try {
+                window.isSimulationMode = true;
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('dashboard-screen').classList.remove('hidden');
+
+                document.getElementById('input-fee').value = "5.00";
+                document.getElementById('input-markup').value = "1.50";
+
+                document.getElementById('kpi-bars').innerText = "12";
+                document.getElementById('kpi-rounds').innerText = "345";
+                document.getElementById('kpi-revenue').innerText = "R$ 4.520,00";
+                document.getElementById('kpi-profit').innerText = "R$ 226,00";
+
+                const tbody = document.getElementById('table-bars');
+                tbody.innerHTML = `
+                    <tr class="border-b border-gray-700/50"><td class="py-4 font-bold">Bar do Zé (Simulado)</td><td class="py-4">✅</td></tr>
+                    <tr class="border-b border-gray-700/50"><td class="py-4 font-bold">Espetinho do João (Simulado)</td><td class="py-4">❌</td></tr>
+                    <tr class="border-b border-gray-700/50"><td class="py-4 font-bold">Pub Gelado (Simulado)</td><td class="py-4">✅</td></tr>
+                `;
+
+                window.loadMasterData = () => {};
+                window.saveSettings = () => { alert("Configurações salvas (Simulação)!"); };
+            } catch (error) {
+                alert("Erro na simulação: " + error.message);
+                console.error(error);
+            }
+        }
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -89,8 +122,6 @@
         const SUPABASE_URL = 'https://vjupsdakdxexxcdkqfzf.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqdXBzZGFrZHhleHhjZGtxZnpmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2NjY2NDYsImV4cCI6MjA5NTI0MjY0Nn0.5XKPuhn34s-EUf6NXqNwpZysQoJVsyBIHQeVg4wnyyo';
         
-        let settingsId = null;
-        let isSimulationMode = false;
         let supabase = null;
 
         try {
@@ -98,7 +129,7 @@
                 supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
                 supabase.auth.onAuthStateChange((event, session) => {
-                    if (isSimulationMode) return;
+                    if (window.isSimulationMode) return;
                     if (session && session.user.email === 'appsolutions76@gmail.com') {
                         document.getElementById('auth-screen').classList.add('hidden');
                         document.getElementById('dashboard-screen').classList.remove('hidden');
@@ -136,39 +167,11 @@
         
         async function logout() { await supabase.auth.signOut(); }
 
-        function handleSimulationLogin() {
-            try {
-                isSimulationMode = true;
-                document.getElementById('auth-screen').classList.add('hidden');
-                document.getElementById('dashboard-screen').classList.remove('hidden');
-
-                document.getElementById('input-fee').value = "5.00";
-                document.getElementById('input-markup').value = "1.50";
-
-                document.getElementById('kpi-bars').innerText = "12";
-                document.getElementById('kpi-rounds').innerText = "345";
-                document.getElementById('kpi-revenue').innerText = "R$ 4.520,00";
-                document.getElementById('kpi-profit').innerText = "R$ 226,00";
-
-                const tbody = document.getElementById('table-bars');
-                tbody.innerHTML = `
-                    <tr class="border-b border-gray-700/50"><td class="py-4 font-bold">Bar do Zé (Simulado)</td><td class="py-4">✅</td></tr>
-                    <tr class="border-b border-gray-700/50"><td class="py-4 font-bold">Espetinho do João (Simulado)</td><td class="py-4">❌</td></tr>
-                    <tr class="border-b border-gray-700/50"><td class="py-4 font-bold">Pub Gelado (Simulado)</td><td class="py-4">✅</td></tr>
-                `;
-
-                window.loadMasterData = () => {};
-                window.saveSettings = () => { alert("Configurações salvas (Simulação)!"); };
-            } catch (error) {
-                alert("Erro na simulação: " + error.message);
-                console.error(error);
-            }
-        }
-
         async function loadMasterData() {
+            if (window.isSimulationMode) return;
             const { data: settings } = await supabase.from('platform_settings').select('*').limit(1).single();
             if (settings) {
-                settingsId = settings.id;
+                window.settingsId = settings.id;
                 document.getElementById('input-fee').value = (settings.platform_fee_percentage * 100).toFixed(2);
                 document.getElementById('input-markup').value = settings.markup_multiplier.toFixed(2);
             }
@@ -192,7 +195,7 @@
         async function saveSettings() {
             const fee = Number(document.getElementById('input-fee').value) / 100;
             const markup = Number(document.getElementById('input-markup').value);
-            const { error } = await supabase.from('platform_settings').update({ platform_fee_percentage: fee, markup_multiplier: markup }).eq('id', settingsId);
+            const { error } = await supabase.from('platform_settings').update({ platform_fee_percentage: fee, markup_multiplier: markup }).eq('id', window.settingsId);
             if (error) alert(error.message); else { alert("Salvo!"); loadMasterData(); }
         }
     </script>
