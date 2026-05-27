@@ -14,23 +14,31 @@
                 document.getElementById('auth-screen').classList.add('hidden');
                 document.getElementById('dashboard-screen').classList.remove('hidden');
 
-                document.getElementById('input-fee').value = "5.00";
-                document.getElementById('input-markup').value = "1.50";
+                let simSettings = JSON.parse(localStorage.getItem('simSettings')) || { fee: 5.00, markup: 1.50 };
+                document.getElementById('input-fee').value = simSettings.fee.toFixed(2);
+                document.getElementById('input-markup').value = simSettings.markup.toFixed(2);
 
-                document.getElementById('kpi-bars').innerText = "12";
-                document.getElementById('kpi-rounds').innerText = "345";
-                document.getElementById('kpi-revenue').innerText = "R$ 4.520,00";
-                document.getElementById('kpi-profit').innerText = "R$ 226,00";
+                let simRev = parseFloat(localStorage.getItem('simRevenue') || '0');
+                let simSpins = parseInt(localStorage.getItem('simSpins') || '0');
+                
+                document.getElementById('kpi-bars').innerText = "1 (Modo Simulação)";
+                document.getElementById('kpi-rounds').innerText = simSpins.toString();
+                document.getElementById('kpi-revenue').innerText = `R$ ${simRev.toFixed(2)}`;
+                document.getElementById('kpi-profit').innerText = `R$ ${(simRev * (simSettings.fee / 100)).toFixed(2)}`;
 
                 const tbody = document.getElementById('table-bars');
                 tbody.innerHTML = `
-                    <tr class="border-b border-gray-700/50"><td class="py-4 font-bold">Bar do Zé (Simulado)</td><td class="py-4">✅</td></tr>
-                    <tr class="border-b border-gray-700/50"><td class="py-4 font-bold">Espetinho do João (Simulado)</td><td class="py-4">❌</td></tr>
-                    <tr class="border-b border-gray-700/50"><td class="py-4 font-bold">Pub Gelado (Simulado)</td><td class="py-4">✅</td></tr>
+                    <tr class="border-b border-gray-700/50"><td class="py-4 font-bold">Bar Parceiro (Simulado)</td><td class="py-4">✅</td></tr>
                 `;
 
                 window.loadMasterData = () => {};
-                window.saveSettings = () => { alert("Configurações salvas (Simulação)!"); };
+                window.saveSettings = () => {
+                    const fee = parseFloat(document.getElementById('input-fee').value) || 0;
+                    const markup = parseFloat(document.getElementById('input-markup').value) || 0;
+                    localStorage.setItem('simSettings', JSON.stringify({ fee, markup }));
+                    alert("Configurações salvas no Modo Simulação!\nO Bar Parceiro agora usará esse Markup.");
+                    handleSimulationLogin(); // recarrega a tela
+                };
             } catch (error) {
                 alert("Erro na simulação: " + error.message);
                 console.error(error);

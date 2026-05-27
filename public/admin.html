@@ -21,14 +21,25 @@
                 document.getElementById('mp-status').className = "mb-4 font-semibold text-green-600";
                 document.getElementById('btn-connect-mp').classList.add('hidden');
 
+                let simSettings = JSON.parse(localStorage.getItem('simSettings')) || { markup: 1.50 };
+                window.MARKUP = simSettings.markup;
+
                 let simPrizes = JSON.parse(localStorage.getItem('simPrizes'));
                 if (!simPrizes) {
                     simPrizes = [
-                        { id: 'sim-1', name: 'Heineken 600ml', bet_amount: 5.00, prize_cost: 15.00 },
-                        { id: 'sim-2', name: 'Porção de Fritas', bet_amount: 8.00, prize_cost: 25.00 }
+                        { id: 'sim-1', name: 'Heineken 600ml', bet_amount: 15.00 * window.MARKUP, prize_cost: 15.00 },
+                        { id: 'sim-2', name: 'Porção de Fritas', bet_amount: 25.00 * window.MARKUP, prize_cost: 25.00 }
                     ];
                     localStorage.setItem('simPrizes', JSON.stringify(simPrizes));
                 }
+
+                function loadFaturamento() {
+                    let simRev = parseFloat(localStorage.getItem('simRevenue') || '0');
+                    let simSpins = parseInt(localStorage.getItem('simSpins') || '0');
+                    document.getElementById('kpi-bar-rev').innerText = `R$ ${simRev.toFixed(2)}`;
+                    document.getElementById('kpi-bar-spins').innerText = simSpins.toString();
+                }
+                loadFaturamento();
 
                 function renderSimPrizes() {
                     const tbody = document.getElementById('table-prizes');
@@ -116,6 +127,18 @@
         </nav>
 
         <main class="max-w-4xl mx-auto p-6 mt-6 space-y-8">
+            <!-- KPIs do Bar -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-700">
+                    <h3 class="text-gray-400 font-bold mb-2">Faturamento Bruto</h3>
+                    <p id="kpi-bar-rev" class="text-4xl font-black text-green-400">R$ 0,00</p>
+                </div>
+                <div class="bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-700">
+                    <h3 class="text-gray-400 font-bold mb-2">Total de Giros</h3>
+                    <p id="kpi-bar-spins" class="text-4xl font-black text-cyan-400">0</p>
+                </div>
+            </div>
+
             <!-- Auth MP -->
             <section class="bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-700">
                 <h2 class="text-2xl font-bold mb-2 text-white">Conta Mercado Pago</h2>
@@ -160,14 +183,21 @@
                 <div class="flex gap-4">
                     <div class="w-1/2">
                         <label class="text-xs font-bold text-gray-500 mb-1 block">Custo Real (R$)</label>
-                        <input type="number" id="prize-cost" step="0.01" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none" placeholder="10.00">
+                        <input type="number" id="prize-cost" oninput="autoCalcBet()" step="0.01" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none" placeholder="10.00">
                     </div>
                     <div class="w-1/2">
-                        <label class="text-xs font-bold text-gray-500 mb-1 block">Valor do Giro (R$)</label>
-                        <input type="number" id="prize-bet" step="0.01" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none" placeholder="2.00">
+                        <label class="text-xs font-bold text-gray-500 mb-1 block">Valor do Giro Sugerido (R$)</label>
+                        <input type="number" id="prize-bet" step="0.01" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none" placeholder="15.00">
                     </div>
                 </div>
             </div>
+            <script>
+                function autoCalcBet() {
+                    if(!window.MARKUP) window.MARKUP = 1.5;
+                    const cost = parseFloat(document.getElementById('prize-cost').value) || 0;
+                    document.getElementById('prize-bet').value = (cost * window.MARKUP).toFixed(2);
+                }
+            </script>
             <div class="mt-6 flex justify-end gap-3">
                 <button onclick="document.getElementById('modal-prize').classList.add('hidden')" class="px-4 py-2 text-gray-400 hover:text-white font-bold">Cancelar</button>
                 <button onclick="savePrize()" class="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition">Salvar</button>
@@ -262,6 +292,17 @@
                     </tr>
                 `;
             });
+
+            // Carrega faturamento real
+            const { data: rounds } = await supabase.from('rounds').select('bet_amount, status').eq('bar_id', window.BAR_ID);
+            const paid = rounds ? rounds.filter(r => ['paid','spinning','completed'].includes(r.status)) : [];
+            const rev = paid.reduce((acc, curr) => acc + Number(curr.bet_amount), 0);
+            document.getElementById('kpi-bar-rev').innerText = `R$ ${rev.toFixed(2)}`;
+            document.getElementById('kpi-bar-spins').innerText = paid.length;
+
+            // Pega o markup real da plataforma
+            const { data: settings } = await supabase.from('platform_settings').select('markup_multiplier').limit(1).single();
+            if (settings) window.MARKUP = settings.markup_multiplier;
         }
 
         async function savePrize() {

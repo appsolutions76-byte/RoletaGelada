@@ -248,6 +248,17 @@
                 mockBtn.innerText = 'Simular Pagamento (Teste)';
                 mockBtn.onclick = () => {
                     mockBtn.innerText = 'Simulando...'; mockBtn.disabled = true;
+                    
+                    // Registra o faturamento no localStorage para os painéis testarem
+                    let simRev = parseFloat(localStorage.getItem('simRevenue') || '0');
+                    let simSpins = parseInt(localStorage.getItem('simSpins') || '0');
+                    // Encontra o prêmio selecionado para pegar o valor
+                    const p = prizes.find(pr => pr.id === state.prizeId);
+                    if (p) {
+                        localStorage.setItem('simRevenue', (simRev + p.bet_amount).toString());
+                        localStorage.setItem('simSpins', (simSpins + 1).toString());
+                    }
+                    
                     startRoulette();
                 };
                 document.getElementById('pix-area').appendChild(mockBtn);
