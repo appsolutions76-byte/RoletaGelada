@@ -21,8 +21,9 @@
                 document.getElementById('mp-status').className = "mb-4 font-semibold text-green-600";
                 document.getElementById('btn-connect-mp').classList.add('hidden');
 
-                let simSettings = JSON.parse(localStorage.getItem('simSettings')) || { markup: 1.50 };
+                let simSettings = JSON.parse(localStorage.getItem('simSettings')) || { markup: 1.50, fee: 5.00 };
                 window.MARKUP = simSettings.markup;
+                window.FEE = simSettings.fee / 100;
 
                 let simPrizes = JSON.parse(localStorage.getItem('simPrizes'));
                 if (!simPrizes) {
@@ -37,6 +38,7 @@
                     let simRev = parseFloat(localStorage.getItem('simRevenue') || '0');
                     let simSpins = parseInt(localStorage.getItem('simSpins') || '0');
                     document.getElementById('kpi-bar-rev').innerText = `R$ ${simRev.toFixed(2)}`;
+                    document.getElementById('kpi-bar-net').innerText = `R$ ${(simRev * (1 - window.FEE)).toFixed(2)}`;
                     document.getElementById('kpi-bar-spins').innerText = simSpins.toString();
                 }
                 loadFaturamento();
@@ -144,10 +146,15 @@
 
         <main class="max-w-4xl mx-auto p-6 mt-6 space-y-8">
             <!-- KPIs do Bar -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div class="bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-700">
                     <h3 class="text-gray-400 font-bold mb-2">Faturamento Bruto</h3>
                     <p id="kpi-bar-rev" class="text-4xl font-black text-green-400">R$ 0,00</p>
+                </div>
+                <div class="bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-700">
+                    <h3 class="text-gray-400 font-bold mb-2">Faturamento Líquido</h3>
+                    <p id="kpi-bar-net" class="text-4xl font-black text-yellow-400">R$ 0,00</p>
+                    <p class="text-xs text-gray-500 mt-1">Já deduzida a taxa da plataforma</p>
                 </div>
                 <div class="bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-700">
                     <h3 class="text-gray-400 font-bold mb-2">Total de Giros</h3>
@@ -325,16 +332,22 @@
                 `;
             });
 
+            // Pega as configurações da plataforma para calcular o líquido
+            const { data: settings } = await supabase.from('platform_settings').select('markup_multiplier, platform_fee_percentage').limit(1).single();
+            if (settings) {
+                window.MARKUP = settings.markup_multiplier;
+                window.FEE = settings.platform_fee_percentage;
+            } else {
+                window.FEE = 0.05;
+            }
+
             // Carrega faturamento real
             const { data: rounds } = await supabase.from('rounds').select('bet_amount, status').eq('bar_id', window.BAR_ID);
             const paid = rounds ? rounds.filter(r => ['paid','spinning','completed'].includes(r.status)) : [];
             const rev = paid.reduce((acc, curr) => acc + Number(curr.bet_amount), 0);
             document.getElementById('kpi-bar-rev').innerText = `R$ ${rev.toFixed(2)}`;
+            document.getElementById('kpi-bar-net').innerText = `R$ ${(rev * (1 - window.FEE)).toFixed(2)}`;
             document.getElementById('kpi-bar-spins').innerText = paid.length;
-
-            // Pega o markup real da plataforma
-            const { data: settings } = await supabase.from('platform_settings').select('markup_multiplier').limit(1).single();
-            if (settings) window.MARKUP = settings.markup_multiplier;
 
             // Realtime Sync para produção
             if (!window.realtimeSubscribed) {
