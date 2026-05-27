@@ -37,7 +37,8 @@
                 function loadFaturamento() {
                     let simRev = parseFloat(localStorage.getItem('simRevenue') || '0');
                     let simSpins = parseInt(localStorage.getItem('simSpins') || '0');
-                    document.getElementById('kpi-bar-rev').innerText = `R$ ${simRev.toFixed(2)}`;
+                    const revEl = document.getElementById('kpi-bar-rev');
+                    if(revEl) revEl.innerText = `R$ ${simRev.toFixed(2)}`;
                     document.getElementById('kpi-bar-net').innerText = `R$ ${(simRev * (1 - window.FEE)).toFixed(2)}`;
                     document.getElementById('kpi-bar-spins').innerText = simSpins.toString();
                 }
@@ -62,7 +63,10 @@
                                 <td class="p-3 font-semibold text-white">${p.name}</td>
                                 <td class="p-3 text-cyan-400 font-bold">R$ ${p.bet_amount.toFixed(2)}</td>
                                 <td class="p-3 text-gray-400">R$ ${p.prize_cost.toFixed(2)}</td>
-                                <td class="p-3 text-right"><button onclick="deleteSimPrize('${p.id}')" class="text-red-400 hover:text-red-300 text-xs uppercase font-bold underline transition">Excluir</button></td>
+                                <td class="p-3 text-right">
+                                    <button onclick="openEditModal('${p.id}', '${p.name.replace(/'/g, "\\'")}', ${p.prize_cost}, ${p.bet_amount})" class="text-blue-400 hover:text-blue-300 text-xs uppercase font-bold underline transition mr-2">Editar</button>
+                                    <button onclick="deleteSimPrize('${p.id}')" class="text-red-400 hover:text-red-300 text-xs uppercase font-bold underline transition">Excluir</button>
+                                </td>
                             </tr>
                         `;
                     });
@@ -93,7 +97,28 @@
 
                 window.saveMinorPrizes = () => {
                     localStorage.setItem('simMinorPrizes', document.getElementById('minor-prizes-input').value);
-                    alert("Prêmios menores salvos na simulação!");
+                    localStorage.setItem('simConsolationFee', document.getElementById('consolation-fee-input').value);
+                    const msg = document.getElementById('minor-prizes-msg');
+                    msg.innerText = "Configurações de Consolação salvas na simulação!";
+                    msg.className = "text-green-400 text-sm mt-2 font-bold";
+                    msg.classList.remove('hidden');
+                    setTimeout(() => msg.classList.add('hidden'), 5000);
+                };
+
+                window.updatePrize = async () => {
+                    const id = document.getElementById('edit-prize-id').value;
+                    const name = document.getElementById('edit-prize-name').value;
+                    const cost = parseFloat(document.getElementById('edit-prize-cost').value) || 0;
+                    const bet = parseFloat(document.getElementById('edit-prize-bet').value) || 0;
+                    if(!name) return alert("Digite um nome!");
+                    
+                    const idx = simPrizes.findIndex(p => p.id === id);
+                    if (idx > -1) {
+                        simPrizes[idx] = { ...simPrizes[idx], name, prize_cost: cost, bet_amount: bet };
+                        localStorage.setItem('simPrizes', JSON.stringify(simPrizes));
+                        renderSimPrizes();
+                    }
+                    document.getElementById('modal-edit-prize').classList.add('hidden');
                 };
 
                 window.copyAppUrl = () => {
@@ -146,11 +171,7 @@
 
         <main class="max-w-4xl mx-auto p-6 mt-6 space-y-8">
             <!-- KPIs do Bar -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-700">
-                    <h3 class="text-gray-400 font-bold mb-2">Faturamento Bruto</h3>
-                    <p id="kpi-bar-rev" class="text-4xl font-black text-green-400">R$ 0,00</p>
-                </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-700">
                     <h3 class="text-gray-400 font-bold mb-2">Faturamento Líquido</h3>
                     <p id="kpi-bar-net" class="text-4xl font-black text-yellow-400">R$ 0,00</p>
@@ -174,12 +195,22 @@
 
             <!-- Prêmios Menores (Consolação) -->
             <section class="bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-700">
-                <h2 class="text-2xl font-bold mb-2 text-white">Prêmios Menores (Consolação)</h2>
-                <p class="text-gray-400 mb-4 text-sm">Preencha os espaços vazios da roleta com pequenos prêmios para agradar o cliente. Separe por vírgula.</p>
-                <div class="flex gap-4">
-                    <input type="text" id="minor-prizes-input" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none" placeholder="Ex: Amendoim, Shot de Pinga, Bala">
-                    <button onclick="saveMinorPrizes()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-3 rounded-lg shadow transition">Salvar</button>
+                <h2 class="text-2xl font-bold mb-2 text-white">Configurações de Consolação</h2>
+                <p class="text-gray-400 mb-4 text-sm">Preencha os prêmios menores para a roleta e defina uma taxa extra para cobrir esse custo.</p>
+                <div class="flex flex-col gap-4">
+                    <div>
+                        <label class="text-xs font-bold text-gray-500 mb-1 block">Prêmios Menores (separados por vírgula)</label>
+                        <input type="text" id="minor-prizes-input" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none" placeholder="Ex: Amendoim, Shot de Pinga, Bala">
+                    </div>
+                    <div class="flex gap-4 items-end">
+                        <div class="w-1/2">
+                            <label class="text-xs font-bold text-gray-500 mb-1 block">Taxa de Consolação (R$)</label>
+                            <input type="number" id="consolation-fee-input" step="0.01" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none" placeholder="0.50">
+                        </div>
+                        <button onclick="saveMinorPrizes()" class="w-1/2 bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-3 rounded-lg shadow transition">Salvar Configurações</button>
+                    </div>
                 </div>
+                <p class="text-xs text-gray-500 mt-2">A Taxa de Consolação é somada ao valor do giro que o cliente paga no Pix, e o valor vai 100% para você cobrir as despesas dos prêmios menores.</p>
                 <p id="minor-prizes-msg" class="text-green-400 text-sm mt-2 font-bold hidden">Salvo com sucesso!</p>
             </section>
 
@@ -220,15 +251,40 @@
                         <input type="number" id="prize-cost" step="0.01" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none" placeholder="10.00">
                     </div>
                     <div class="w-1/2">
-                        <label class="text-xs font-bold text-gray-500 mb-1 block">Valor do Giro / Aposta (R$)</label>
+                        <label class="text-xs font-bold text-gray-500 mb-1 block">Valor Base do Giro (R$)</label>
                         <input type="number" id="prize-bet" step="0.01" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none" placeholder="Ex: 2.00">
                     </div>
                 </div>
-                <p class="text-xs text-gray-400 mt-3">Dica: O Valor do Giro deve ser bem menor que o Custo Real (ex: 10% a 20%). A roleta só libera o prêmio principal quando acumular giros suficientes!</p>
+                <p class="text-xs text-gray-400 mt-3">Dica: O Valor Base deve ser bem menor que o Custo Real (ex: 10% a 20%). A Taxa de Consolação será somada a este valor base na hora do pagamento.</p>
             </div>
             <div class="mt-6 flex justify-end gap-3">
                 <button onclick="document.getElementById('modal-prize').classList.add('hidden')" class="px-4 py-2 text-gray-400 hover:text-white font-bold">Cancelar</button>
                 <button onclick="savePrize()" class="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Editar Prêmio -->
+    <div id="modal-edit-prize" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+        <div class="bg-gray-800 p-6 rounded-2xl border border-gray-700 w-full max-w-md shadow-2xl">
+            <h3 class="text-xl font-bold mb-4 text-white">Editar Prêmio</h3>
+            <div class="space-y-4">
+                <input type="hidden" id="edit-prize-id">
+                <input type="text" id="edit-prize-name" placeholder="Nome (ex: Heineken)" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none">
+                <div class="flex gap-4">
+                    <div class="w-1/2">
+                        <label class="text-xs font-bold text-gray-500 mb-1 block">Custo Real (R$)</label>
+                        <input type="number" id="edit-prize-cost" step="0.01" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none" placeholder="10.00">
+                    </div>
+                    <div class="w-1/2">
+                        <label class="text-xs font-bold text-gray-500 mb-1 block">Valor Base do Giro (R$)</label>
+                        <input type="number" id="edit-prize-bet" step="0.01" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none" placeholder="Ex: 2.00">
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button onclick="document.getElementById('modal-edit-prize').classList.add('hidden')" class="px-4 py-2 text-gray-400 hover:text-white font-bold">Cancelar</button>
+                <button onclick="updatePrize()" class="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition">Atualizar</button>
             </div>
         </div>
     </div>
@@ -298,9 +354,12 @@
 
             document.getElementById('nav-bar-name').innerText = bar.name;
             
-            // Tenta carregar os minor prizes (se a coluna existir)
+            // Tenta carregar os minor prizes e consolation fee (se as colunas existirem)
             if (bar.minor_prizes !== undefined && bar.minor_prizes !== null) {
                 document.getElementById('minor-prizes-input').value = bar.minor_prizes;
+            }
+            if (bar.consolation_fee !== undefined && bar.consolation_fee !== null) {
+                document.getElementById('consolation-fee-input').value = bar.consolation_fee;
             }
 
             if (bar.mp_access_token) {
@@ -321,7 +380,10 @@
                         <td class="p-3 font-semibold text-white">${p.name}</td>
                         <td class="p-3 text-cyan-400 font-bold">R$ ${p.bet_amount}</td>
                         <td class="p-3 text-gray-400">R$ ${p.prize_cost}</td>
-                        <td class="p-3 text-right"><button onclick="deletePrize('${p.id}')" class="text-red-400 hover:text-red-300 text-xs uppercase font-bold underline transition">Excluir</button></td>
+                        <td class="p-3 text-right">
+                            <button onclick="openEditModal('${p.id}', '${p.name.replace(/'/g, "\\'")}', ${p.prize_cost}, ${p.bet_amount})" class="text-blue-400 hover:text-blue-300 text-xs uppercase font-bold underline transition mr-2">Editar</button>
+                            <button onclick="deletePrize('${p.id}')" class="text-red-400 hover:text-red-300 text-xs uppercase font-bold underline transition">Excluir</button>
+                        </td>
                     </tr>
                 `;
             });
@@ -339,7 +401,8 @@
             const { data: rounds } = await supabase.from('rounds').select('bet_amount, status').eq('bar_id', window.BAR_ID);
             const paid = rounds ? rounds.filter(r => ['paid','spinning','completed'].includes(r.status)) : [];
             const rev = paid.reduce((acc, curr) => acc + Number(curr.bet_amount), 0);
-            document.getElementById('kpi-bar-rev').innerText = `R$ ${rev.toFixed(2)}`;
+            const revEl = document.getElementById('kpi-bar-rev');
+            if(revEl) revEl.innerText = `R$ ${rev.toFixed(2)}`;
             document.getElementById('kpi-bar-net').innerText = `R$ ${(rev * (1 - window.FEE)).toFixed(2)}`;
             document.getElementById('kpi-bar-spins').innerText = paid.length;
 
@@ -355,7 +418,8 @@
         async function saveMinorPrizes() {
             if (window.isSimulationMode) return; // tratado acima
             const val = document.getElementById('minor-prizes-input').value;
-            const { error } = await supabase.from('bars').update({ minor_prizes: val }).eq('id', window.BAR_ID);
+            const fee = parseFloat(document.getElementById('consolation-fee-input').value) || 0;
+            const { error } = await supabase.from('bars').update({ minor_prizes: val, consolation_fee: fee }).eq('id', window.BAR_ID);
             const msg = document.getElementById('minor-prizes-msg');
             if (error) {
                 msg.innerText = "Atenção: Para o modo real funcionar, crie a coluna 'minor_prizes' tipo Text na tabela bars no Supabase!";
@@ -375,6 +439,29 @@
             
             await supabase.from('prizes').insert([{ bar_id: window.BAR_ID, name, prize_cost: cost, bet_amount: bet }]);
             document.getElementById('modal-prize').classList.add('hidden');
+            loadDashboard();
+        }
+
+        function openEditModal(id, name, cost, bet) {
+            document.getElementById('edit-prize-id').value = id;
+            document.getElementById('edit-prize-name').value = name;
+            document.getElementById('edit-prize-cost').value = cost;
+            document.getElementById('edit-prize-bet').value = bet;
+            document.getElementById('modal-edit-prize').classList.remove('hidden');
+        }
+
+        async function updatePrize() {
+            if (window.isSimulationMode) return window.updatePrize(); // Chama a versão da simulação
+            
+            const id = document.getElementById('edit-prize-id').value;
+            const name = document.getElementById('edit-prize-name').value;
+            const cost = document.getElementById('edit-prize-cost').value;
+            const bet = document.getElementById('edit-prize-bet').value;
+            
+            if(!name) return alert("Digite um nome!");
+
+            await supabase.from('prizes').update({ name, prize_cost: cost, bet_amount: bet }).eq('id', id);
+            document.getElementById('modal-edit-prize').classList.add('hidden');
             loadDashboard();
         }
 

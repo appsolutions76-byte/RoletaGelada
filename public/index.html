@@ -186,14 +186,16 @@
                     
                     const simMinor = localStorage.getItem('simMinorPrizes');
                     if (simMinor) minorPrizes = simMinor.split(',').map(s => s.trim());
+                    window.CONSOLATION_FEE = parseFloat(localStorage.getItem('simConsolationFee')) || 0;
                     
                     document.getElementById('bar-name').innerText = barName;
                 } else {
                     // Busca o Bar real e os prêmios menores
-                    const bars = await sfetch(`/rest/v1/bars?id=eq.${BAR_ID}&select=name,minor_prizes`);
+                    const bars = await sfetch(`/rest/v1/bars?id=eq.${BAR_ID}&select=name,minor_prizes,consolation_fee`);
                     if(bars && bars.length > 0) {
                         document.getElementById('bar-name').innerText = bars[0].name;
                         if(bars[0].minor_prizes) minorPrizes = bars[0].minor_prizes.split(',').map(s => s.trim());
+                        window.CONSOLATION_FEE = parseFloat(bars[0].consolation_fee) || 0;
                     }
 
                     // Busca prêmios reais
@@ -248,12 +250,12 @@
         function selectPrize(id, name, bet) {
             state.prizeId = id;
             state.prizeName = name;
-            state.prizeBet = bet;
+            state.prizeBet = bet + (window.CONSOLATION_FEE || 0); // Soma a taxa de consolação
             
             document.getElementById('step-list').classList.add('hidden');
             document.getElementById('step-pay').classList.remove('hidden');
             document.getElementById('lbl-prize').innerText = name;
-            document.getElementById('lbl-bet').innerText = bet.toFixed(2);
+            document.getElementById('lbl-bet').innerText = state.prizeBet.toFixed(2);
         }
 
         async function generatePix() {

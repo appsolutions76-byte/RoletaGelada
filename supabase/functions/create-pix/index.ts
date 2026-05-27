@@ -40,13 +40,17 @@ serve(async (req) => {
       
     if (settingsError || !settings) throw new Error('Settings not found')
 
-    // 2. Create Round
+    // 2. Calculate Total Bet
+    const consolationFee = Number(prize.bars.consolation_fee || 0);
+    const totalBetAmount = Number(prize.bet_amount) + consolationFee;
+
+    // 3. Create Round
     const { data: round, error: roundError } = await supabaseClient
       .from('rounds')
       .insert([{ 
           prize_id, 
           player_name: player_name || 'Anônimo', 
-          bet_amount: prize.bet_amount, 
+          bet_amount: totalBetAmount, 
           status: 'pending' 
       }])
       .select()
@@ -54,10 +58,10 @@ serve(async (req) => {
 
     if (roundError) throw roundError;
 
-    // 3. Split Math
+    // 4. Split Math
     const mpAccessToken = Deno.env.get('MP_ACCESS_TOKEN'); // Platform token
     
-    // Calculate application_fee based on the bet_amount and platform fee percentage
+    // Calculate application_fee based on the ORIGINAL bet_amount and platform fee percentage
     const platformFee = Number((prize.bet_amount * settings.platform_fee_percentage).toFixed(2));
     
     // O resto vai pro dono do bar (O MP faz isso automaticamente ao passarmos a application_fee)
@@ -72,7 +76,7 @@ serve(async (req) => {
     }
 
     const paymentData: any = {
-      transaction_amount: Number(prize.bet_amount),
+      transaction_amount: Number(totalBetAmount.toFixed(2)),
       description: `Roleta Gelada: ${prize.name}`,
       payment_method_id: "pix",
       payer: { email: "cliente@roletagelada.com" },

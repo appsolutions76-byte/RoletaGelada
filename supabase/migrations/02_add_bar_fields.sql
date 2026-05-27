@@ -1,0 +1,3 @@
+ALTER TABLE public.bars 
+ADD COLUMN IF NOT EXISTS minor_prizes TEXT,
+ADD COLUMN IF NOT EXISTS consolation_fee NUMERIC(10, 2) DEFAULT 0.00;
