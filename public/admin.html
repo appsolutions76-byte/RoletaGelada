@@ -39,7 +39,15 @@
                     let simSpins = parseInt(localStorage.getItem('simSpins') || '0');
                     const revEl = document.getElementById('kpi-bar-rev');
                     if(revEl) revEl.innerText = `R$ ${simRev.toFixed(2)}`;
-                    document.getElementById('kpi-bar-net').innerText = `R$ ${(simRev * (1 - window.FEE)).toFixed(2)}`;
+                    
+                    let simConsolationFee = parseFloat(localStorage.getItem('simConsolationFee') || '0');
+                    let totalConsolation = simSpins * simConsolationFee;
+                    let platformFeeTotal = simRev * window.FEE;
+                    let netRev = simRev - platformFeeTotal - totalConsolation;
+
+                    document.getElementById('kpi-bar-net').innerText = `R$ ${netRev.toFixed(2)}`;
+                    const consEl = document.getElementById('kpi-bar-consolation');
+                    if(consEl) consEl.innerText = `R$ ${totalConsolation.toFixed(2)}`;
                     document.getElementById('kpi-bar-spins').innerText = simSpins.toString();
                 }
                 loadFaturamento();
@@ -171,11 +179,16 @@
 
         <main class="max-w-4xl mx-auto p-6 mt-6 space-y-8">
             <!-- KPIs do Bar -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div class="bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-700">
                     <h3 class="text-gray-400 font-bold mb-2">Faturamento Líquido</h3>
                     <p id="kpi-bar-net" class="text-4xl font-black text-yellow-400">R$ 0,00</p>
-                    <p class="text-xs text-gray-500 mt-1">Já deduzida a taxa da plataforma</p>
+                    <p class="text-xs text-gray-500 mt-1">Livre de taxas e consolação</p>
+                </div>
+                <div class="bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-700">
+                    <h3 class="text-gray-400 font-bold mb-2">Fundo Consolação</h3>
+                    <p id="kpi-bar-consolation" class="text-4xl font-black text-green-400">R$ 0,00</p>
+                    <p class="text-xs text-gray-500 mt-1">Reserva para prêmios menores</p>
                 </div>
                 <div class="bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-700">
                     <h3 class="text-gray-400 font-bold mb-2">Total de Giros</h3>
@@ -210,7 +223,7 @@
                         <button onclick="saveMinorPrizes()" class="w-1/2 bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-3 rounded-lg shadow transition">Salvar Configurações</button>
                     </div>
                 </div>
-                <p class="text-xs text-gray-500 mt-2">A Taxa de Consolação é somada ao valor do giro que o cliente paga no Pix, e o valor vai 100% para você cobrir as despesas dos prêmios menores.</p>
+                <p class="text-xs text-gray-500 mt-2">A Taxa de Consolação é deduzida do seu Faturamento Líquido para formar um fundo que cobre as despesas dos prêmios menores. O cliente paga apenas o valor base da aposta.</p>
                 <p id="minor-prizes-msg" class="text-green-400 text-sm mt-2 font-bold hidden">Salvo com sucesso!</p>
             </section>
 
@@ -251,11 +264,11 @@
                         <input type="number" id="prize-cost" step="0.01" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none" placeholder="10.00">
                     </div>
                     <div class="w-1/2">
-                        <label class="text-xs font-bold text-gray-500 mb-1 block">Valor Base do Giro (R$)</label>
+                        <label class="text-xs font-bold text-gray-500 mb-1 block">Valor da Aposta (R$)</label>
                         <input type="number" id="prize-bet" step="0.01" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none" placeholder="Ex: 2.00">
                     </div>
                 </div>
-                <p class="text-xs text-gray-400 mt-3">Dica: O Valor Base deve ser bem menor que o Custo Real (ex: 10% a 20%). A Taxa de Consolação será somada a este valor base na hora do pagamento.</p>
+                <p class="text-xs text-gray-400 mt-3">Dica: O Valor da Aposta deve ser bem menor que o Custo Real (ex: 10% a 20%).</p>
             </div>
             <div class="mt-6 flex justify-end gap-3">
                 <button onclick="document.getElementById('modal-prize').classList.add('hidden')" class="px-4 py-2 text-gray-400 hover:text-white font-bold">Cancelar</button>
@@ -277,7 +290,7 @@
                         <input type="number" id="edit-prize-cost" step="0.01" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none" placeholder="10.00">
                     </div>
                     <div class="w-1/2">
-                        <label class="text-xs font-bold text-gray-500 mb-1 block">Valor Base do Giro (R$)</label>
+                        <label class="text-xs font-bold text-gray-500 mb-1 block">Valor da Aposta (R$)</label>
                         <input type="number" id="edit-prize-bet" step="0.01" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none" placeholder="Ex: 2.00">
                     </div>
                 </div>
@@ -401,10 +414,19 @@
             const { data: rounds } = await supabase.from('rounds').select('bet_amount, status').eq('bar_id', window.BAR_ID);
             const paid = rounds ? rounds.filter(r => ['paid','spinning','completed'].includes(r.status)) : [];
             const rev = paid.reduce((acc, curr) => acc + Number(curr.bet_amount), 0);
+            const totalSpins = paid.length;
             const revEl = document.getElementById('kpi-bar-rev');
             if(revEl) revEl.innerText = `R$ ${rev.toFixed(2)}`;
-            document.getElementById('kpi-bar-net').innerText = `R$ ${(rev * (1 - window.FEE)).toFixed(2)}`;
-            document.getElementById('kpi-bar-spins').innerText = paid.length;
+
+            const consolationFee = parseFloat(bar.consolation_fee) || 0;
+            const totalConsolation = totalSpins * consolationFee;
+            const platformFeeTotal = rev * window.FEE;
+            const netRev = rev - platformFeeTotal - totalConsolation;
+
+            document.getElementById('kpi-bar-net').innerText = `R$ ${netRev.toFixed(2)}`;
+            const consEl = document.getElementById('kpi-bar-consolation');
+            if(consEl) consEl.innerText = `R$ ${totalConsolation.toFixed(2)}`;
+            document.getElementById('kpi-bar-spins').innerText = totalSpins;
 
             // Realtime Sync para produção
             if (!window.realtimeSubscribed) {

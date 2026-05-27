@@ -40,9 +40,8 @@ serve(async (req) => {
       
     if (settingsError || !settings) throw new Error('Settings not found')
 
-    // 2. Calculate Total Bet
-    const consolationFee = Number(prize.bars.consolation_fee || 0);
-    const totalBetAmount = Number(prize.bet_amount) + consolationFee;
+    // 2. Calculate Total Bet (Reverted to base bet as per new requirement)
+    const totalBetAmount = Number(prize.bet_amount);
 
     // 3. Create Round
     const { data: round, error: roundError } = await supabaseClient
@@ -62,7 +61,7 @@ serve(async (req) => {
     const mpAccessToken = Deno.env.get('MP_ACCESS_TOKEN'); // Platform token
     
     // Calculate application_fee based on the ORIGINAL bet_amount and platform fee percentage
-    const platformFee = Number((prize.bet_amount * settings.platform_fee_percentage).toFixed(2));
+    const platformFee = Number((totalBetAmount * settings.platform_fee_percentage).toFixed(2));
     
     // O resto vai pro dono do bar (O MP faz isso automaticamente ao passarmos a application_fee)
     // O pagamento é feito usando o token do Bar (Marketplace payment)

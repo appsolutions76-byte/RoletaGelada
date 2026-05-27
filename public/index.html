@@ -250,7 +250,7 @@
         function selectPrize(id, name, bet) {
             state.prizeId = id;
             state.prizeName = name;
-            state.prizeBet = bet + (window.CONSOLATION_FEE || 0); // Soma a taxa de consolação
+            state.prizeBet = bet; // Cliente paga o valor base exato
             
             document.getElementById('step-list').classList.add('hidden');
             document.getElementById('step-pay').classList.remove('hidden');
