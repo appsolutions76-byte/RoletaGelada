@@ -223,8 +223,16 @@
                 prizes.forEach(p => {
                     const div = document.createElement('div');
                     div.className = 'prize-card';
+                    
+                    let vaultDebug = "";
+                    if (BAR_ID === 'simulacao-123') {
+                        let vaults = JSON.parse(localStorage.getItem('simVaults') || '{}');
+                        let currentVault = vaults[p.id] || 0;
+                        vaultDebug = `<span style="font-size: 11px; color: #fbbf24; display:block;">Cofre: R$ ${currentVault.toFixed(2)}</span>`;
+                    }
+                    
                     div.innerHTML = `
-                        <div><p class="prize-name">${p.name}</p></div>
+                        <div><p class="prize-name">${p.name}</p>${vaultDebug}</div>
                         <div><p class="prize-price">R$ ${p.bet_amount.toFixed(2)}</p></div>
                     `;
                     div.onclick = () => selectPrize(p.id, p.name, p.bet_amount);
@@ -270,6 +278,11 @@
                     
                     localStorage.setItem('simRevenue', (simRev + state.prizeBet).toString());
                     localStorage.setItem('simSpins', (simSpins + 1).toString());
+                    
+                    // Acumula no cofre (Vault) da simulação
+                    let vaults = JSON.parse(localStorage.getItem('simVaults') || '{}');
+                    vaults[state.prizeId] = (vaults[state.prizeId] || 0) + state.prizeBet;
+                    localStorage.setItem('simVaults', JSON.stringify(vaults));
                     
                     startRoulette();
                 };
@@ -337,8 +350,25 @@
             try {
                 let prizeResult = "NADA";
                 if (BAR_ID === 'simulacao-123') {
-                    // Modo simulação: sorteia entre perder e ganhar o prêmio apostado
-                    prizeResult = Math.random() > 0.5 ? state.prizeName : 'NADA';
+                    // Lógica realística simulada: Ganha apenas se o Cofre >= Custo Real * Markup
+                    let vaults = JSON.parse(localStorage.getItem('simVaults') || '{}');
+                    let currentVault = vaults[state.prizeId] || 0;
+                    
+                    // Busca o prêmio e o markup
+                    const p = prizes.find(pr => pr.id === state.prizeId);
+                    const simSettings = JSON.parse(localStorage.getItem('simSettings')) || { markup: 1.50 };
+                    
+                    // Target = custo * markup
+                    const targetVault = (p && p.prize_cost) ? (p.prize_cost * simSettings.markup) : 0;
+                    
+                    if (targetVault > 0 && currentVault >= targetVault) {
+                        prizeResult = state.prizeName; // GANHOU!
+                        // Deduz o custo do cofre (na vida real, o cofre zera ou deduz o target)
+                        vaults[state.prizeId] = currentVault - targetVault;
+                        localStorage.setItem('simVaults', JSON.stringify(vaults));
+                    } else {
+                        prizeResult = 'NADA'; // PERDEU (Cofre não encheu)
+                    }
                 } else {
                     const data = await sfetch(`/functions/v1/spin-roulette`, 'POST', { round_id: state.roundId });
                     prizeResult = data.prize;
