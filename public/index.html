@@ -72,7 +72,17 @@
             transition: transform 4s cubic-bezier(0.1, 0.7, 0.1, 1);
             display: flex; align-items: center; justify-content: center;
         }
-        .roleta-text { position: absolute; font-weight: bold; font-size: 18px; color: #FFF; text-shadow: 0 0 10px black; text-align: center; width: 80%; line-height: 1.2; }
+        .roleta-text-center { font-weight: bold; font-size: 14px; color: #FFF; text-align: center; width: 90%; line-height: 1.2; z-index: 20; }
+        .roleta-center {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 110px; height: 110px; background: #1e293b; border: 4px solid #38bdf8;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 15px rgba(0,0,0,0.8); z-index: 15;
+        }
+        .slice-wrapper { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
+        .slice-text { position: absolute; top: 15px; left: 0; right: 0; text-align: center; font-size: 16px; font-weight: 900; }
+        .text-white { color: white; text-shadow: 1px 1px 2px black; }
+        .text-black { color: black; }
         
         .error-msg { color: #ef4444; font-weight: bold; padding: 10px; border: 1px solid #ef4444; border-radius: 5px; background: rgba(239, 68, 68, 0.1); }
     </style>
@@ -110,7 +120,16 @@
             <div class="roleta-box">
                 <div class="roleta-pointer"></div>
                 <div class="roleta-wheel" id="wheel">
-                    <span class="roleta-text" id="roleta-text-display">ROTAÇÃO</span>
+                    <div class="slice-wrapper" style="transform: rotate(30deg)"><div class="slice-text text-white">NADA</div></div>
+                    <div class="slice-wrapper" style="transform: rotate(90deg)"><div class="slice-text text-black font-black">GANHOU!</div></div>
+                    <div class="slice-wrapper" style="transform: rotate(150deg)"><div class="slice-text text-white">QUASE</div></div>
+                    <div class="slice-wrapper" style="transform: rotate(210deg)"><div class="slice-text text-black">NADA</div></div>
+                    <div class="slice-wrapper" style="transform: rotate(270deg)"><div class="slice-text text-white">IHHH</div></div>
+                    <div class="slice-wrapper" style="transform: rotate(330deg)"><div class="slice-text text-black">QUASE</div></div>
+                    
+                    <div class="roleta-center">
+                        <span class="roleta-text-center" id="roleta-text-display">ROTAÇÃO</span>
+                    </div>
                 </div>
             </div>
             <button class="btn-blue" id="btn-girar" onclick="spinRoulette()" disabled>Sorteando...</button>
@@ -302,9 +321,23 @@
                     prizeResult = data.prize;
                 }
                 
+                let finalRotation = 0;
+                if (prizeResult === 'NADA' || prizeResult === 'GIRE +1') {
+                    // Perdeu: Para em qualquer fatia que não seja a de 90 graus (GANHOU)
+                    // Fatias de perda: 30deg (NADA), 150deg (QUASE), 210deg (NADA), 270deg (IHHH), 330deg (QUASE)
+                    // Para alinhar 30deg no topo, roda 330. Para 150deg, roda 210, etc.
+                    const losingRotations = [330, 210, 150, 90, 30]; 
+                    const targetRotation = losingRotations[Math.floor(Math.random() * losingRotations.length)];
+                    finalRotation = 360 * 10 + targetRotation + Math.floor(Math.random() * 40 - 20); // offset para não parar perfeitamente no meio
+                } else {
+                    // Ganhou: Para na fatia de 90 graus (GANHOU!)
+                    // Para alinhar 90deg no topo, roda 270.
+                    finalRotation = 360 * 10 + 270 + Math.floor(Math.random() * 40 - 20);
+                }
+                
                 // Animação CSS 
                 const wheel = document.getElementById('wheel');
-                wheel.style.transform = `rotate(${360 * 10}deg)`; // Apenas um giro visual fixo para simplificar
+                wheel.style.transform = `rotate(${finalRotation}deg)`;
                 
                 // Efeitos Sonoros e Vibração
                 if (!window.audioCtx) {
