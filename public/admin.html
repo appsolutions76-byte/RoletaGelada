@@ -21,37 +21,50 @@
                 document.getElementById('mp-status').className = "mb-4 font-semibold text-green-600";
                 document.getElementById('btn-connect-mp').classList.add('hidden');
 
-                const tbody = document.getElementById('table-prizes');
-                tbody.innerHTML = `
-                    <tr class="border-b border-gray-700/50 hover:bg-white/5 transition">
-                        <td class="p-3 font-semibold text-white">Heineken 600ml</td>
-                        <td class="p-3 text-cyan-400 font-bold">R$ 5.00</td>
-                        <td class="p-3 text-gray-400">R$ 15.00</td>
-                        <td class="p-3 text-right"><button onclick="this.closest('tr').remove()" class="text-red-400 hover:text-red-300 text-xs uppercase font-bold underline transition">Excluir</button></td>
-                    </tr>
-                    <tr class="border-b border-gray-700/50 hover:bg-white/5 transition">
-                        <td class="p-3 font-semibold text-white">Porção de Fritas</td>
-                        <td class="p-3 text-cyan-400 font-bold">R$ 8.00</td>
-                        <td class="p-3 text-gray-400">R$ 25.00</td>
-                        <td class="p-3 text-right"><button onclick="this.closest('tr').remove()" class="text-red-400 hover:text-red-300 text-xs uppercase font-bold underline transition">Excluir</button></td>
-                    </tr>
-                `;
+                let simPrizes = JSON.parse(localStorage.getItem('simPrizes'));
+                if (!simPrizes) {
+                    simPrizes = [
+                        { id: 'sim-1', name: 'Heineken 600ml', bet_amount: 5.00, prize_cost: 15.00 },
+                        { id: 'sim-2', name: 'Porção de Fritas', bet_amount: 8.00, prize_cost: 25.00 }
+                    ];
+                    localStorage.setItem('simPrizes', JSON.stringify(simPrizes));
+                }
+
+                function renderSimPrizes() {
+                    const tbody = document.getElementById('table-prizes');
+                    tbody.innerHTML = '';
+                    simPrizes.forEach(p => {
+                        tbody.innerHTML += `
+                            <tr class="border-b border-gray-700/50 hover:bg-white/5 transition">
+                                <td class="p-3 font-semibold text-white">${p.name}</td>
+                                <td class="p-3 text-cyan-400 font-bold">R$ ${p.bet_amount.toFixed(2)}</td>
+                                <td class="p-3 text-gray-400">R$ ${p.prize_cost.toFixed(2)}</td>
+                                <td class="p-3 text-right"><button onclick="deleteSimPrize('${p.id}')" class="text-red-400 hover:text-red-300 text-xs uppercase font-bold underline transition">Excluir</button></td>
+                            </tr>
+                        `;
+                    });
+                }
+
+                window.deleteSimPrize = (id) => {
+                    simPrizes = simPrizes.filter(p => p.id !== id);
+                    localStorage.setItem('simPrizes', JSON.stringify(simPrizes));
+                    renderSimPrizes();
+                };
+
+                renderSimPrizes();
 
                 // Sobrescrevendo funções globais para simulação
                 window.loadDashboard = () => {};
                 window.savePrize = () => {
                     const name = document.getElementById('prize-name').value;
-                    const cost = document.getElementById('prize-cost').value || '0.00';
-                    const bet = document.getElementById('prize-bet').value || '0.00';
+                    const cost = parseFloat(document.getElementById('prize-cost').value) || 0;
+                    const bet = parseFloat(document.getElementById('prize-bet').value) || 0;
                     if(!name) return alert("Digite um nome!");
-                    tbody.innerHTML += `
-                        <tr class="border-b border-gray-700/50 hover:bg-white/5 transition">
-                            <td class="p-3 font-semibold text-white">${name}</td>
-                            <td class="p-3 text-cyan-400 font-bold">R$ ${parseFloat(bet).toFixed(2)}</td>
-                            <td class="p-3 text-gray-400">R$ ${parseFloat(cost).toFixed(2)}</td>
-                            <td class="p-3 text-right"><button onclick="this.closest('tr').remove()" class="text-red-400 hover:text-red-300 text-xs uppercase font-bold underline transition">Excluir</button></td>
-                        </tr>
-                    `;
+                    
+                    simPrizes.push({ id: 'sim-' + Date.now(), name, bet_amount: bet, prize_cost: cost });
+                    localStorage.setItem('simPrizes', JSON.stringify(simPrizes));
+                    renderSimPrizes();
+                    
                     document.getElementById('modal-prize').classList.add('hidden');
                 };
             } catch (error) {
@@ -267,8 +280,7 @@
         function copyAppUrl() {
             // A URL do app com o ID do bar na query string para o QR Code
             const appUrl = `${window.location.origin}/index.html?bar=${window.BAR_ID}`;
-            navigator.clipboard.writeText(appUrl);
-            alert("Link copiado! Coloque essa URL num Gerador de QR Code grátis na internet e imprima pro bar.");
+            prompt("Link do App Cliente gerado com sucesso!\n\nCopie o link abaixo e cole em uma nova aba para testar:", appUrl);
         }
     </script>
 </body>

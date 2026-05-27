@@ -156,13 +156,19 @@
                 let prizes = [];
 
                 if (BAR_ID === 'simulacao-123') {
-                    // Modo Simulação
+                    // Modo Simulação sincronizado com o Admin via localStorage
                     barName = 'Bar Parceiro (Modo Simulação)';
-                    prizes = [
-                        { id: 'sim-prize-1', name: 'Heineken 600ml', bet_amount: 5.00 },
-                        { id: 'sim-prize-2', name: 'Porção de Fritas', bet_amount: 8.00 },
-                        { id: 'sim-prize-3', name: 'Caipirinha', bet_amount: 10.00 }
-                    ];
+                    
+                    const localPrizes = localStorage.getItem('simPrizes');
+                    if (localPrizes) {
+                        prizes = JSON.parse(localPrizes);
+                    } else {
+                        prizes = [
+                            { id: 'sim-1', name: 'Heineken 600ml', bet_amount: 5.00 },
+                            { id: 'sim-2', name: 'Porção de Fritas', bet_amount: 8.00 }
+                        ];
+                    }
+                    
                     document.getElementById('bar-name').innerText = barName;
                 } else {
                     // Busca o Bar real
