@@ -88,21 +88,28 @@
     <script>
         const SUPABASE_URL = 'https://vjupsdakdxexxcdkqfzf.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqdXBzZGFrZHhleHhjZGtxZnpmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2NjY2NDYsImV4cCI6MjA5NTI0MjY0Nn0.5XKPuhn34s-EUf6NXqNwpZysQoJVsyBIHQeVg4wnyyo';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
         let settingsId = null;
         let isSimulationMode = false;
+        let supabase = null;
 
-        supabase.auth.onAuthStateChange((event, session) => {
-            if (isSimulationMode) return;
-            if (session && session.user.email === 'appsolutions76@gmail.com') {
-                document.getElementById('auth-screen').classList.add('hidden');
-                document.getElementById('dashboard-screen').classList.remove('hidden');
-                loadMasterData();
-            } else {
-                document.getElementById('auth-screen').classList.remove('hidden');
-                document.getElementById('dashboard-screen').classList.add('hidden');
+        try {
+            if (window.supabase) {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+                supabase.auth.onAuthStateChange((event, session) => {
+                    if (isSimulationMode) return;
+                    if (session && session.user.email === 'appsolutions76@gmail.com') {
+                        document.getElementById('auth-screen').classList.add('hidden');
+                        document.getElementById('dashboard-screen').classList.remove('hidden');
+                        loadMasterData();
+                    } else {
+                        document.getElementById('auth-screen').classList.remove('hidden');
+                        document.getElementById('dashboard-screen').classList.add('hidden');
+                    }
+                });
             }
-        });
+        } catch(e) { console.error("Supabase block erro:", e); }
 
         async function handleLogin() {
             const p = document.getElementById('auth-password').value;
