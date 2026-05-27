@@ -90,8 +90,12 @@
 <body>
 
     <div class="container">
-        <h1>Roleta Gelada</h1>
-        <p class="subtitle" id="bar-name">Carregando...</p>
+        <!-- Header -->
+        <header class="text-center mb-8 flex flex-col items-center">
+            <img id="bar-logo" src="" alt="Logo" class="h-24 mb-4 hidden rounded-xl shadow-lg object-contain">
+            <h1 id="bar-name" class="text-3xl font-black text-white">Carregando...</h1>
+            <p class="text-xs text-gray-500 mt-2 font-medium tracking-wider uppercase">Powered by Roleta Gelada</p>
+        </header>
 
         <!-- Etapa 1: Lista -->
         <div id="step-list">
@@ -111,7 +115,6 @@
             <div id="pix-area" class="hidden">
                 <p style="color:#facc15; font-size: 14px; margin-top: 15px;">Aguardando pagamento...</p>
                 <div id="qr-container"></div>
-                <!-- Botão dinâmico será injetado aqui -->
             </div>
         </div>
 
@@ -153,7 +156,6 @@
 
         let state = { prizeId: null, prizeName: null, roundId: null, prizeBet: 0, finalMinorPrize: null, sliceMap: {} };
 
-        // Função Genérica de Fetch (Substitui supabase-js)
         async function sfetch(endpoint, method = 'GET', body = null) {
             const options = {
                 method,
@@ -169,33 +171,60 @@
             try { return JSON.parse(text); } catch(e) { return text; }
         }
 
+        function applyTheme(color, bg, logoUrl) {
+            if (color) {
+                const style = document.createElement('style');
+                style.innerHTML = `
+                    .bg-blue-600 { background-color: ${color} !important; }
+                    .btn-blue { background-color: ${color} !important; }
+                    .hover\\:bg-blue-500:hover { background-color: ${color} !important; opacity: 0.8; }
+                    .text-cyan-400 { color: ${color} !important; }
+                    .text-blue-500 { color: ${color} !important; }
+                    h1 { color: ${color} !important; }
+                `;
+                document.head.appendChild(style);
+            }
+            if (bg) {
+                if (bg.startsWith('http')) {
+                    document.body.style.backgroundImage = `url('${bg}')`;
+                    document.body.style.backgroundSize = 'cover';
+                    document.body.style.backgroundPosition = 'center';
+                    document.body.style.backgroundAttachment = 'fixed';
+                } else {
+                    document.body.style.backgroundColor = bg;
+                }
+            }
+            if (logoUrl && logoUrl.startsWith('http')) {
+                const logoEl = document.getElementById('bar-logo');
+                logoEl.src = logoUrl;
+                logoEl.classList.remove('hidden');
+                document.getElementById('bar-name').classList.remove('text-3xl');
+                document.getElementById('bar-name').classList.add('text-xl', 'text-gray-300');
+            }
+        }
+
         async function init() {
             try {
-                let barName = '';
                 let prizes = [];
-
                 let minorPrizes = ["Amendoim", "Shot de Cachaça", "IHHH", "GIRE +1", "NADA"];
 
                 if (BAR_ID === 'simulacao-123') {
-                    // Modo Simulação sincronizado com o Admin via localStorage
-                    barName = 'Bar Parceiro (Modo Simulação)';
-                    
+                    document.getElementById('bar-name').innerText = 'Bar Parceiro (Modo Simulação)';
                     const localPrizes = localStorage.getItem('simPrizes');
-                    if (localPrizes) prizes = JSON.parse(localPrizes);
-                    else prizes = [{ id: 'sim-1', name: 'Heineken 600ml', bet_amount: 5.00 }, { id: 'sim-2', name: 'Porção de Fritas', bet_amount: 8.00 }];
+                    prizes = localPrizes ? JSON.parse(localPrizes) : [{ id: 'sim-1', name: 'Heineken 600ml', bet_amount: 5.00 }];
                     
-                    const simMinor = localStorage.getItem('simMinorPrizes');
-                    if (simMinor) minorPrizes = simMinor.split(',').map(s => s.trim());
-                    window.CONSOLATION_FEE = parseFloat(localStorage.getItem('simConsolationFee')) || 0;
-                    
-                    document.getElementById('bar-name').innerText = barName;
+                    let simThemeColor = localStorage.getItem('simThemeColor');
+                    let simThemeBg = localStorage.getItem('simThemeBg');
+                    let simThemeLogo = localStorage.getItem('simThemeLogo');
+                    applyTheme(simThemeColor, simThemeBg, simThemeLogo);
                 } else {
-                    // Busca o Bar real e os prêmios menores
-                    const bars = await sfetch(`/rest/v1/bars?id=eq.${BAR_ID}&select=name,minor_prizes,consolation_fee`);
+                    const bars = await sfetch(`/rest/v1/bars?id=eq.${BAR_ID}&select=name,minor_prizes,consolation_fee,theme_color,theme_background,theme_logo_url`);
                     if(bars && bars.length > 0) {
-                        document.getElementById('bar-name').innerText = bars[0].name;
-                        if(bars[0].minor_prizes) minorPrizes = bars[0].minor_prizes.split(',').map(s => s.trim());
-                        window.CONSOLATION_FEE = parseFloat(bars[0].consolation_fee) || 0;
+                        const bar = bars[0];
+                        document.getElementById('bar-name').innerText = bar.name;
+                        if(bar.minor_prizes) minorPrizes = bar.minor_prizes.split(',').map(s => s.trim());
+                        window.CONSOLATION_FEE = parseFloat(bar.consolation_fee) || 0;
+                        applyTheme(bar.theme_color, bar.theme_background, bar.theme_logo_url);
                     }
 
                     // Busca prêmios reais

@@ -1,0 +1,4 @@
+ALTER TABLE public.bars
+ADD COLUMN IF NOT EXISTS theme_color VARCHAR(10) DEFAULT '#38bdf8',
+ADD COLUMN IF NOT EXISTS theme_background TEXT,
+ADD COLUMN IF NOT EXISTS theme_logo_url TEXT;
