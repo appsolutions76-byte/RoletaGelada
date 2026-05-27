@@ -241,11 +241,15 @@
         function startRoulette() {
             document.getElementById('step-pay').classList.add('hidden');
             document.getElementById('step-spin').classList.remove('hidden');
-            setTimeout(spinRoulette, 500); // Gira automaticamente após meio segundo
+            
+            const btnGirar = document.getElementById('btn-girar');
+            btnGirar.disabled = false;
+            btnGirar.innerText = "GIRAR A ROLETA";
         }
 
         async function spinRoulette() {
             const btn = document.getElementById('btn-girar');
+            btn.disabled = true;
             btn.innerText = "Sorteando...";
 
             try {

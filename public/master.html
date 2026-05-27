@@ -24,6 +24,9 @@
                 
                 <button onclick="handleLogin()" class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-black py-3 rounded-lg hover:opacity-90">Entrar no Cofre</button>
                 <button onclick="handleSignUpMaster()" class="w-full text-xs text-gray-500 underline text-center block pt-2">Criar minha senha de dono (1º acesso)</button>
+                <div class="pt-4 border-t border-gray-700 mt-2">
+                    <button onclick="handleSimulationLogin()" class="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-3 rounded-lg transition">Modo Simulação (Teste Rápido)</button>
+                </div>
             </div>
         </div>
     </div>
@@ -123,6 +126,29 @@
         }
         
         async function logout() { await supabase.auth.signOut(); }
+
+        function handleSimulationLogin() {
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('dashboard-screen').classList.remove('hidden');
+
+            document.getElementById('input-fee').value = "5.00";
+            document.getElementById('input-markup').value = "1.50";
+
+            document.getElementById('kpi-bars').innerText = "12";
+            document.getElementById('kpi-rounds').innerText = "345";
+            document.getElementById('kpi-revenue').innerText = "R$ 4.520,00";
+            document.getElementById('kpi-profit').innerText = "R$ 226,00";
+
+            const tbody = document.getElementById('table-bars');
+            tbody.innerHTML = `
+                <tr class="border-b border-gray-700/50"><td class="py-4 font-bold">Bar do Zé (Simulado)</td><td class="py-4">✅</td></tr>
+                <tr class="border-b border-gray-700/50"><td class="py-4 font-bold">Espetinho do João (Simulado)</td><td class="py-4">❌</td></tr>
+                <tr class="border-b border-gray-700/50"><td class="py-4 font-bold">Pub Gelado (Simulado)</td><td class="py-4">✅</td></tr>
+            `;
+
+            window.loadMasterData = () => {};
+            window.saveSettings = () => { alert("Configurações salvas (Simulação)!"); };
+        }
 
         async function loadMasterData() {
             const { data: settings } = await supabase.from('platform_settings').select('*').limit(1).single();
