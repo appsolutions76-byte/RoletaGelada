@@ -41,6 +41,13 @@
                 }
                 loadFaturamento();
 
+                // Atualização em tempo real via aba lateral
+                window.addEventListener('storage', (e) => {
+                    if (window.isSimulationMode && (e.key === 'simRevenue' || e.key === 'simSpins')) {
+                        loadFaturamento();
+                    }
+                });
+
                 let simMinor = localStorage.getItem('simMinorPrizes') || "Amendoim, Shot de Cachaça, IHHH, GIRE +1, NADA";
                 document.getElementById('minor-prizes-input').value = simMinor;
 
@@ -328,6 +335,14 @@
             // Pega o markup real da plataforma
             const { data: settings } = await supabase.from('platform_settings').select('markup_multiplier').limit(1).single();
             if (settings) window.MARKUP = settings.markup_multiplier;
+
+            // Realtime Sync para produção
+            if (!window.realtimeSubscribed) {
+                window.realtimeSubscribed = true;
+                supabase.channel('admin-rounds').on('postgres_changes', { event: '*', schema: 'public', table: 'rounds', filter: `bar_id=eq.${window.BAR_ID}` }, () => {
+                    loadDashboard();
+                }).subscribe();
+            }
         }
 
         async function saveMinorPrizes() {
