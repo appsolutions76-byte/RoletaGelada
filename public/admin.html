@@ -24,7 +24,7 @@
                     <button onclick="handleSignUp()" class="w-1/2 bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-lg transition">Criar Conta</button>
                 </div>
                 <div class="pt-4 border-t border-gray-700 mt-2">
-                    <button onclick="handleSimulationLogin()" class="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-3 rounded-lg transition">Modo Simulação (Teste Rápido)</button>
+                    <button type="button" onclick="handleSimulationLogin()" class="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-3 rounded-lg transition">Modo Simulação (Teste Rápido)</button>
                 </div>
                 <p id="auth-error" class="text-red-400 text-sm text-center font-bold hidden"></p>
                 <p class="text-xs text-gray-500 text-center mt-4">Para cadastrar, preencha o Nome do Bar, e-mail e senha e clique em Criar Conta.</p>
@@ -109,9 +109,11 @@
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
         let BAR_ID = null;
+        let isSimulationMode = false;
 
         // -- Autenticação --
         supabase.auth.onAuthStateChange((event, session) => {
+            if (isSimulationMode) return;
             if (session) {
                 BAR_ID = session.user.id;
                 document.getElementById('auth-screen').classList.add('hidden');
@@ -149,48 +151,54 @@
         async function logout() { await supabase.auth.signOut(); }
 
         function handleSimulationLogin() {
-            BAR_ID = 'simulacao-123';
-            document.getElementById('auth-screen').classList.add('hidden');
-            document.getElementById('dashboard-screen').classList.remove('hidden');
-            
-            document.getElementById('nav-bar-name').innerText = "Bar Parceiro (Modo Simulação)";
-            document.getElementById('mp-status').innerHTML = "✅ Conectado ao Mercado Pago (Simulado)";
-            document.getElementById('mp-status').className = "mb-4 font-semibold text-green-600";
-            document.getElementById('btn-connect-mp').classList.add('hidden');
+            try {
+                isSimulationMode = true;
+                BAR_ID = 'simulacao-123';
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('dashboard-screen').classList.remove('hidden');
+                
+                document.getElementById('nav-bar-name').innerText = "Bar Parceiro (Modo Simulação)";
+                document.getElementById('mp-status').innerHTML = "✅ Conectado ao Mercado Pago (Simulado)";
+                document.getElementById('mp-status').className = "mb-4 font-semibold text-green-600";
+                document.getElementById('btn-connect-mp').classList.add('hidden');
 
-            const tbody = document.getElementById('table-prizes');
-            tbody.innerHTML = `
-                <tr class="border-b border-gray-700/50 hover:bg-white/5 transition">
-                    <td class="p-3 font-semibold text-white">Heineken 600ml</td>
-                    <td class="p-3 text-cyan-400 font-bold">R$ 5.00</td>
-                    <td class="p-3 text-gray-400">R$ 15.00</td>
-                    <td class="p-3 text-right"><button onclick="this.closest('tr').remove()" class="text-red-400 hover:text-red-300 text-xs uppercase font-bold underline transition">Excluir</button></td>
-                </tr>
-                <tr class="border-b border-gray-700/50 hover:bg-white/5 transition">
-                    <td class="p-3 font-semibold text-white">Porção de Fritas</td>
-                    <td class="p-3 text-cyan-400 font-bold">R$ 8.00</td>
-                    <td class="p-3 text-gray-400">R$ 25.00</td>
-                    <td class="p-3 text-right"><button onclick="this.closest('tr').remove()" class="text-red-400 hover:text-red-300 text-xs uppercase font-bold underline transition">Excluir</button></td>
-                </tr>
-            `;
-
-            // Sobrescrevendo funções originais para simulação
-            window.loadDashboard = () => {};
-            window.savePrize = () => {
-                const name = document.getElementById('prize-name').value;
-                const cost = document.getElementById('prize-cost').value || '0.00';
-                const bet = document.getElementById('prize-bet').value || '0.00';
-                if(!name) return alert("Digite um nome!");
-                tbody.innerHTML += `
+                const tbody = document.getElementById('table-prizes');
+                tbody.innerHTML = `
                     <tr class="border-b border-gray-700/50 hover:bg-white/5 transition">
-                        <td class="p-3 font-semibold text-white">${name}</td>
-                        <td class="p-3 text-cyan-400 font-bold">R$ ${parseFloat(bet).toFixed(2)}</td>
-                        <td class="p-3 text-gray-400">R$ ${parseFloat(cost).toFixed(2)}</td>
+                        <td class="p-3 font-semibold text-white">Heineken 600ml</td>
+                        <td class="p-3 text-cyan-400 font-bold">R$ 5.00</td>
+                        <td class="p-3 text-gray-400">R$ 15.00</td>
+                        <td class="p-3 text-right"><button onclick="this.closest('tr').remove()" class="text-red-400 hover:text-red-300 text-xs uppercase font-bold underline transition">Excluir</button></td>
+                    </tr>
+                    <tr class="border-b border-gray-700/50 hover:bg-white/5 transition">
+                        <td class="p-3 font-semibold text-white">Porção de Fritas</td>
+                        <td class="p-3 text-cyan-400 font-bold">R$ 8.00</td>
+                        <td class="p-3 text-gray-400">R$ 25.00</td>
                         <td class="p-3 text-right"><button onclick="this.closest('tr').remove()" class="text-red-400 hover:text-red-300 text-xs uppercase font-bold underline transition">Excluir</button></td>
                     </tr>
                 `;
-                document.getElementById('modal-prize').classList.add('hidden');
-            };
+
+                // Sobrescrevendo funções originais para simulação
+                window.loadDashboard = () => {};
+                window.savePrize = () => {
+                    const name = document.getElementById('prize-name').value;
+                    const cost = document.getElementById('prize-cost').value || '0.00';
+                    const bet = document.getElementById('prize-bet').value || '0.00';
+                    if(!name) return alert("Digite um nome!");
+                    tbody.innerHTML += `
+                        <tr class="border-b border-gray-700/50 hover:bg-white/5 transition">
+                            <td class="p-3 font-semibold text-white">${name}</td>
+                            <td class="p-3 text-cyan-400 font-bold">R$ ${parseFloat(bet).toFixed(2)}</td>
+                            <td class="p-3 text-gray-400">R$ ${parseFloat(cost).toFixed(2)}</td>
+                            <td class="p-3 text-right"><button onclick="this.closest('tr').remove()" class="text-red-400 hover:text-red-300 text-xs uppercase font-bold underline transition">Excluir</button></td>
+                        </tr>
+                    `;
+                    document.getElementById('modal-prize').classList.add('hidden');
+                };
+            } catch (error) {
+                alert("Erro na simulação: " + error.message);
+                console.error(error);
+            }
         }
 
         function showError(msg) {
