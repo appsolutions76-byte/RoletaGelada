@@ -152,12 +152,26 @@
 
         async function init() {
             try {
-                // Busca o Bar
-                const bars = await sfetch(`/rest/v1/bars?id=eq.${BAR_ID}&select=name`);
-                if(bars && bars.length > 0) document.getElementById('bar-name').innerText = bars[0].name;
+                let barName = '';
+                let prizes = [];
 
-                // Busca prêmios
-                const prizes = await sfetch(`/rest/v1/prizes?bar_id=eq.${BAR_ID}&active=eq.true&select=*`);
+                if (BAR_ID === 'simulacao-123') {
+                    // Modo Simulação
+                    barName = 'Bar Parceiro (Modo Simulação)';
+                    prizes = [
+                        { id: 'sim-prize-1', name: 'Heineken 600ml', bet_amount: 5.00 },
+                        { id: 'sim-prize-2', name: 'Porção de Fritas', bet_amount: 8.00 },
+                        { id: 'sim-prize-3', name: 'Caipirinha', bet_amount: 10.00 }
+                    ];
+                    document.getElementById('bar-name').innerText = barName;
+                } else {
+                    // Busca o Bar real
+                    const bars = await sfetch(`/rest/v1/bars?id=eq.${BAR_ID}&select=name`);
+                    if(bars && bars.length > 0) document.getElementById('bar-name').innerText = bars[0].name;
+
+                    // Busca prêmios reais
+                    prizes = await sfetch(`/rest/v1/prizes?bar_id=eq.${BAR_ID}&active=eq.true&select=*`);
+                }
                 
                 const container = document.getElementById('prizes-container');
                 container.innerHTML = '';
@@ -196,6 +210,24 @@
         async function generatePix() {
             const btn = document.getElementById('btn-gerar-pix');
             btn.disabled = true; btn.innerText = "Gerando...";
+
+            if (BAR_ID === 'simulacao-123') {
+                state.roundId = 'sim-round-123';
+                btn.classList.add('hidden');
+                document.getElementById('pix-area').classList.remove('hidden');
+                document.getElementById('qr-container').innerHTML = '';
+                new QRCode(document.getElementById('qr-container'), { text: "MOCK_QR_CODE", width: 150, height: 150 });
+
+                const mockBtn = document.createElement('button');
+                mockBtn.className = 'btn-green';
+                mockBtn.innerText = 'Simular Pagamento (Teste)';
+                mockBtn.onclick = () => {
+                    mockBtn.innerText = 'Simulando...'; mockBtn.disabled = true;
+                    startRoulette();
+                };
+                document.getElementById('pix-area').appendChild(mockBtn);
+                return;
+            }
 
             try {
                 const data = await sfetch(`/functions/v1/create-pix`, 'POST', { prize_id: state.prizeId });
@@ -255,7 +287,14 @@
             btn.innerText = "Sorteando...";
 
             try {
-                const data = await sfetch(`/functions/v1/spin-roulette`, 'POST', { round_id: state.roundId });
+                let prizeResult = "NADA";
+                if (BAR_ID === 'simulacao-123') {
+                    // Modo simulação: sorteia entre perder e ganhar o prêmio apostado
+                    prizeResult = Math.random() > 0.5 ? state.prizeName : 'NADA';
+                } else {
+                    const data = await sfetch(`/functions/v1/spin-roulette`, 'POST', { round_id: state.roundId });
+                    prizeResult = data.prize;
+                }
                 
                 // Animação CSS 
                 const wheel = document.getElementById('wheel');
@@ -305,13 +344,13 @@
                     document.getElementById('step-spin').classList.add('hidden');
                     document.getElementById('step-result').classList.remove('hidden');
                     
-                    if(data.prize === 'NADA' || data.prize === 'GIRE +1') {
+                    if(prizeResult === 'NADA' || prizeResult === 'GIRE +1') {
                         document.getElementById('result-title').innerText = "Que pena!";
                         document.getElementById('result-title').style.color = "#ef4444";
                         document.getElementById('result-desc').innerText = "Não foi dessa vez.";
                     } else {
                         document.getElementById('result-title').innerText = "Parabéns!";
-                        document.getElementById('result-desc').innerText = `Você ganhou: ${data.prize}. Mostre este QR ao garçom.`;
+                        document.getElementById('result-desc').innerText = `Você ganhou: ${prizeResult}. Mostre este QR ao garçom.`;
                         document.getElementById('result-qr-container').classList.remove('hidden');
                         document.getElementById('result-qr-container').innerHTML = '';
                         new QRCode(document.getElementById('result-qr-container'), { text: `REDEEM:${state.roundId}`, width: 150, height: 150 });
