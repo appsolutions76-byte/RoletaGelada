@@ -67,6 +67,10 @@
                     
                     document.getElementById('modal-prize').classList.add('hidden');
                 };
+                window.copyAppUrl = () => {
+                    const appUrl = `${window.location.origin}/index.html?bar=${window.BAR_ID}`;
+                    prompt("Link do App Cliente gerado com sucesso!\n\nCopie o link abaixo e cole em uma nova aba para testar:", appUrl);
+                };
             } catch (error) {
                 alert("Erro na simulação: " + error.message);
                 console.error(error);
@@ -277,10 +281,8 @@
             }
         }
 
-        function copyAppUrl() {
-            // A URL do app com o ID do bar na query string para o QR Code
-            const appUrl = `${window.location.origin}/index.html?bar=${window.BAR_ID}`;
-            prompt("Link do App Cliente gerado com sucesso!\n\nCopie o link abaixo e cole em uma nova aba para testar:", appUrl);
+        function showQR() {
+            alert("Apresente o QR gerado abaixo.");
         }
     </script>
 </body>
