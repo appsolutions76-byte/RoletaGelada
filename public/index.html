@@ -219,6 +219,7 @@
                     container.innerHTML = '<p>Nenhum prêmio disponível.</p>';
                     return;
                 }
+                window.loadedPrizes = prizes;
 
                 prizes.forEach(p => {
                     const div = document.createElement('div');
@@ -355,7 +356,7 @@
                     let currentVault = vaults[state.prizeId] || 0;
                     
                     // Busca o prêmio e o markup
-                    const p = prizes.find(pr => pr.id === state.prizeId);
+                    const p = window.loadedPrizes ? window.loadedPrizes.find(pr => pr.id === state.prizeId) : null;
                     const simSettings = JSON.parse(localStorage.getItem('simSettings')) || { markup: 1.50 };
                     
                     // Target = custo * markup
