@@ -151,7 +151,7 @@
         const params = new URLSearchParams(window.location.search);
         const BAR_ID = params.get('bar') || '11111111-1111-1111-1111-111111111111';
 
-        let state = { prizeId: null, prizeName: null, roundId: null };
+        let state = { prizeId: null, prizeName: null, roundId: null, prizeBet: 0 };
 
         // Função Genérica de Fetch (Substitui supabase-js)
         async function sfetch(endpoint, method = 'GET', body = null) {
@@ -225,6 +225,7 @@
         function selectPrize(id, name, bet) {
             state.prizeId = id;
             state.prizeName = name;
+            state.prizeBet = bet;
             
             document.getElementById('step-list').classList.add('hidden');
             document.getElementById('step-pay').classList.remove('hidden');
@@ -252,12 +253,9 @@
                     // Registra o faturamento no localStorage para os painéis testarem
                     let simRev = parseFloat(localStorage.getItem('simRevenue') || '0');
                     let simSpins = parseInt(localStorage.getItem('simSpins') || '0');
-                    // Encontra o prêmio selecionado para pegar o valor
-                    const p = prizes.find(pr => pr.id === state.prizeId);
-                    if (p) {
-                        localStorage.setItem('simRevenue', (simRev + p.bet_amount).toString());
-                        localStorage.setItem('simSpins', (simSpins + 1).toString());
-                    }
+                    
+                    localStorage.setItem('simRevenue', (simRev + state.prizeBet).toString());
+                    localStorage.setItem('simSpins', (simSpins + 1).toString());
                     
                     startRoulette();
                 };
