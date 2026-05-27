@@ -120,12 +120,12 @@
             <div class="roleta-box">
                 <div class="roleta-pointer"></div>
                 <div class="roleta-wheel" id="wheel">
-                    <div class="slice-wrapper" style="transform: rotate(30deg)"><div class="slice-text text-white">NADA</div></div>
+                    <div class="slice-wrapper" style="transform: rotate(30deg)"><div id="slice-30" class="slice-text text-white">NADA</div></div>
                     <div class="slice-wrapper" style="transform: rotate(90deg)"><div class="slice-text text-black font-black">GANHOU!</div></div>
-                    <div class="slice-wrapper" style="transform: rotate(150deg)"><div class="slice-text text-white">QUASE</div></div>
-                    <div class="slice-wrapper" style="transform: rotate(210deg)"><div class="slice-text text-black">NADA</div></div>
-                    <div class="slice-wrapper" style="transform: rotate(270deg)"><div class="slice-text text-white">IHHH</div></div>
-                    <div class="slice-wrapper" style="transform: rotate(330deg)"><div class="slice-text text-black">QUASE</div></div>
+                    <div class="slice-wrapper" style="transform: rotate(150deg)"><div id="slice-150" class="slice-text text-white">QUASE</div></div>
+                    <div class="slice-wrapper" style="transform: rotate(210deg)"><div id="slice-210" class="slice-text text-black">NADA</div></div>
+                    <div class="slice-wrapper" style="transform: rotate(270deg)"><div id="slice-270" class="slice-text text-white">IHHH</div></div>
+                    <div class="slice-wrapper" style="transform: rotate(330deg)"><div id="slice-330" class="slice-text text-black">QUASE</div></div>
                     
                     <div class="roleta-center">
                         <span class="roleta-text-center" id="roleta-text-display">ROTAÇÃO</span>
@@ -151,7 +151,7 @@
         const params = new URLSearchParams(window.location.search);
         const BAR_ID = params.get('bar') || '11111111-1111-1111-1111-111111111111';
 
-        let state = { prizeId: null, prizeName: null, roundId: null, prizeBet: 0 };
+        let state = { prizeId: null, prizeName: null, roundId: null, prizeBet: 0, finalMinorPrize: null, sliceMap: {} };
 
         // Função Genérica de Fetch (Substitui supabase-js)
         async function sfetch(endpoint, method = 'GET', body = null) {
@@ -174,29 +174,43 @@
                 let barName = '';
                 let prizes = [];
 
+                let minorPrizes = ["Amendoim", "Shot de Cachaça", "IHHH", "GIRE +1", "NADA"];
+
                 if (BAR_ID === 'simulacao-123') {
                     // Modo Simulação sincronizado com o Admin via localStorage
                     barName = 'Bar Parceiro (Modo Simulação)';
                     
                     const localPrizes = localStorage.getItem('simPrizes');
-                    if (localPrizes) {
-                        prizes = JSON.parse(localPrizes);
-                    } else {
-                        prizes = [
-                            { id: 'sim-1', name: 'Heineken 600ml', bet_amount: 5.00 },
-                            { id: 'sim-2', name: 'Porção de Fritas', bet_amount: 8.00 }
-                        ];
-                    }
+                    if (localPrizes) prizes = JSON.parse(localPrizes);
+                    else prizes = [{ id: 'sim-1', name: 'Heineken 600ml', bet_amount: 5.00 }, { id: 'sim-2', name: 'Porção de Fritas', bet_amount: 8.00 }];
+                    
+                    const simMinor = localStorage.getItem('simMinorPrizes');
+                    if (simMinor) minorPrizes = simMinor.split(',').map(s => s.trim());
                     
                     document.getElementById('bar-name').innerText = barName;
                 } else {
-                    // Busca o Bar real
-                    const bars = await sfetch(`/rest/v1/bars?id=eq.${BAR_ID}&select=name`);
-                    if(bars && bars.length > 0) document.getElementById('bar-name').innerText = bars[0].name;
+                    // Busca o Bar real e os prêmios menores
+                    const bars = await sfetch(`/rest/v1/bars?id=eq.${BAR_ID}&select=name,minor_prizes`);
+                    if(bars && bars.length > 0) {
+                        document.getElementById('bar-name').innerText = bars[0].name;
+                        if(bars[0].minor_prizes) minorPrizes = bars[0].minor_prizes.split(',').map(s => s.trim());
+                    }
 
                     // Busca prêmios reais
                     prizes = await sfetch(`/rest/v1/prizes?bar_id=eq.${BAR_ID}&active=eq.true&select=*`);
                 }
+
+                // Injeta prêmios menores na roleta
+                const losingAngles = [30, 150, 210, 270, 330];
+                const targetRotations = [330, 210, 150, 90, 30];
+                let minorIndex = 0;
+                losingAngles.forEach((angle, i) => {
+                    const mp = minorPrizes[minorIndex % minorPrizes.length];
+                    const el = document.getElementById(`slice-${angle}`);
+                    if (el) el.innerText = mp;
+                    state.sliceMap[targetRotations[i]] = mp;
+                    minorIndex++;
+                });
                 
                 const container = document.getElementById('prizes-container');
                 container.innerHTML = '';
@@ -337,6 +351,7 @@
                     // Para alinhar 30deg no topo, roda 330. Para 150deg, roda 210, etc.
                     const losingRotations = [330, 210, 150, 90, 30]; 
                     const targetRotation = losingRotations[Math.floor(Math.random() * losingRotations.length)];
+                    state.finalMinorPrize = state.sliceMap[targetRotation];
                     finalRotation = 360 * 10 + targetRotation + Math.floor(Math.random() * 40 - 20); // offset para não parar perfeitamente no meio
                 } else {
                     // Ganhou: Para na fatia de 90 graus (GANHOU!)
@@ -393,9 +408,22 @@
                     document.getElementById('step-result').classList.remove('hidden');
                     
                     if(prizeResult === 'NADA' || prizeResult === 'GIRE +1') {
-                        document.getElementById('result-title').innerText = "Que pena!";
-                        document.getElementById('result-title').style.color = "#ef4444";
-                        document.getElementById('result-desc').innerText = "Não foi dessa vez.";
+                        const minor = state.finalMinorPrize;
+                        // Verifica se é uma string "negativa" conhecida
+                        const isNothing = !minor || minor.toUpperCase() === 'NADA' || minor.toUpperCase() === 'IHHH' || minor.toUpperCase() === 'QUASE' || minor.toUpperCase() === 'NÃO FOI DESSA VEZ';
+                        
+                        if (!isNothing) {
+                            document.getElementById('result-title').innerText = "Prêmio Menor!";
+                            document.getElementById('result-title').style.color = "#facc15";
+                            document.getElementById('result-desc').innerText = `Consolação: ${minor}. Mostre no balcão!`;
+                            document.getElementById('result-qr-container').classList.remove('hidden');
+                            document.getElementById('result-qr-container').innerHTML = '';
+                            new QRCode(document.getElementById('result-qr-container'), { text: `REDEEM_MINOR:${state.roundId}`, width: 150, height: 150 });
+                        } else {
+                            document.getElementById('result-title').innerText = "Que pena!";
+                            document.getElementById('result-title').style.color = "#ef4444";
+                            document.getElementById('result-desc').innerText = minor ? minor : "Não foi dessa vez.";
+                        }
                     } else {
                         document.getElementById('result-title').innerText = "Parabéns!";
                         document.getElementById('result-desc').innerText = `Você ganhou: ${prizeResult}. Mostre este QR ao garçom.`;

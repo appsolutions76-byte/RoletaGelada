@@ -41,6 +41,9 @@
                 }
                 loadFaturamento();
 
+                let simMinor = localStorage.getItem('simMinorPrizes') || "Amendoim, Shot de Cachaça, IHHH, GIRE +1, NADA";
+                document.getElementById('minor-prizes-input').value = simMinor;
+
                 function renderSimPrizes() {
                     const tbody = document.getElementById('table-prizes');
                     tbody.innerHTML = '';
@@ -78,6 +81,12 @@
                     
                     document.getElementById('modal-prize').classList.add('hidden');
                 };
+
+                window.saveMinorPrizes = () => {
+                    localStorage.setItem('simMinorPrizes', document.getElementById('minor-prizes-input').value);
+                    alert("Prêmios menores salvos na simulação!");
+                };
+
                 window.copyAppUrl = () => {
                     const appUrl = `${window.location.origin}/index.html?bar=${window.BAR_ID}`;
                     prompt("Link do App Cliente gerado com sucesso!\n\nCopie o link abaixo e cole em uma nova aba para testar:", appUrl);
@@ -147,6 +156,17 @@
                 <a id="btn-connect-mp" href="#" class="inline-block bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-3 rounded-lg shadow transition">
                     Conectar Mercado Pago
                 </a>
+            </section>
+
+            <!-- Prêmios Menores (Consolação) -->
+            <section class="bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-700">
+                <h2 class="text-2xl font-bold mb-2 text-white">Prêmios Menores (Consolação)</h2>
+                <p class="text-gray-400 mb-4 text-sm">Preencha os espaços vazios da roleta com pequenos prêmios para agradar o cliente. Separe por vírgula.</p>
+                <div class="flex gap-4">
+                    <input type="text" id="minor-prizes-input" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none" placeholder="Ex: Amendoim, Shot de Pinga, Bala">
+                    <button onclick="saveMinorPrizes()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-3 rounded-lg shadow transition">Salvar</button>
+                </div>
+                <p id="minor-prizes-msg" class="text-green-400 text-sm mt-2 font-bold hidden">Salvo com sucesso!</p>
             </section>
 
             <!-- Meus Prêmios -->
@@ -269,6 +289,11 @@
             if(!bar) return;
 
             document.getElementById('nav-bar-name').innerText = bar.name;
+            
+            // Tenta carregar os minor prizes (se a coluna existir)
+            if (bar.minor_prizes !== undefined && bar.minor_prizes !== null) {
+                document.getElementById('minor-prizes-input').value = bar.minor_prizes;
+            }
 
             if (bar.mp_access_token) {
                 document.getElementById('mp-status').innerHTML = "✅ Conectado ao Mercado Pago";
@@ -303,6 +328,22 @@
             // Pega o markup real da plataforma
             const { data: settings } = await supabase.from('platform_settings').select('markup_multiplier').limit(1).single();
             if (settings) window.MARKUP = settings.markup_multiplier;
+        }
+
+        async function saveMinorPrizes() {
+            if (window.isSimulationMode) return; // tratado acima
+            const val = document.getElementById('minor-prizes-input').value;
+            const { error } = await supabase.from('bars').update({ minor_prizes: val }).eq('id', window.BAR_ID);
+            const msg = document.getElementById('minor-prizes-msg');
+            if (error) {
+                msg.innerText = "Atenção: Para o modo real funcionar, crie a coluna 'minor_prizes' tipo Text na tabela bars no Supabase!";
+                msg.className = "text-yellow-400 text-sm mt-2 font-bold";
+            } else {
+                msg.innerText = "Salvo com sucesso!";
+                msg.className = "text-green-400 text-sm mt-2 font-bold";
+            }
+            msg.classList.remove('hidden');
+            setTimeout(() => msg.classList.add('hidden'), 5000);
         }
 
         async function savePrize() {
