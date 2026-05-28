@@ -35,7 +35,10 @@
     <div id="dashboard-screen" class="hidden w-full">
         <nav class="bg-black/50 p-4 border-b border-gray-800 flex justify-between items-center sticky top-0 z-50">
             <h1 class="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500">Roleta Gelada - SUPER ADMIN</h1>
-            <button onclick="logout()" class="text-sm font-bold text-gray-400 underline">Sair 🔒</button>
+            <div class="flex gap-4 items-center">
+                <button onclick="resetAllStats()" class="bg-red-600/20 text-red-500 border border-red-500/30 px-3 py-1 rounded-lg text-sm hover:bg-red-600/30 font-bold transition">Zerar Estatísticas 🧹</button>
+                <button onclick="logout()" class="text-sm font-bold text-gray-400 underline hover:text-white">Sair 🔒</button>
+            </div>
         </nav>
 
         <main class="max-w-6xl mx-auto p-6 space-y-8">
@@ -77,7 +80,13 @@
                 <div class="bg-gray-800 p-6 rounded-2xl border border-gray-700 lg:col-span-2">
                     <h2 class="text-2xl font-bold mb-6 text-white">🏪 Bares Parceiros</h2>
                     <table class="w-full text-left">
-                        <thead class="text-gray-400 text-sm border-b border-gray-700"><tr class="pb-3"><th class="pb-3">Nome</th><th class="pb-3">Mercado Pago</th></tr></thead>
+                        <thead class="text-gray-400 text-sm border-b border-gray-700">
+                            <tr class="pb-3">
+                                <th class="pb-3">Nome</th>
+                                <th class="pb-3">Mercado Pago</th>
+                                <th class="pb-3 text-right">Ações</th>
+                            </tr>
+                        </thead>
                         <tbody id="table-bars" class="text-sm"></tbody>
                     </table>
                 </div>
@@ -150,7 +159,13 @@
             const tbody = document.getElementById('table-bars'); tbody.innerHTML = '';
             bars.forEach(b => {
                 const mp = b.mp_access_token ? "✅" : "❌";
-                tbody.innerHTML += `<tr class="border-b border-gray-700/50"><td class="py-4 font-bold">${b.name}</td><td class="py-4">${mp}</td></tr>`;
+                const isMaster = b.name.toUpperCase().includes('MASTER');
+                const delBtn = isMaster ? '' : `<button onclick="deletePartner('${b.id}', '${b.name}')" class="text-red-500 hover:text-red-400 text-lg ml-auto block" title="Excluir Parceiro">🗑️</button>`;
+                tbody.innerHTML += `<tr class="border-b border-gray-700/50">
+                    <td class="py-4 font-bold">${b.name}</td>
+                    <td class="py-4">${mp}</td>
+                    <td class="py-4 text-right">${delBtn}</td>
+                </tr>`;
             });
 
             const { data: rounds } = await supabaseClient.from('rounds').select('bet_amount, status');
@@ -174,6 +189,39 @@
             const markup = Number(document.getElementById('input-markup').value);
             const { error } = await supabaseClient.from('platform_settings').update({ platform_fee_percentage: fee, markup_multiplier: markup }).eq('id', window.settingsId);
             if (error) alert(error.message); else { alert("Salvo!"); loadMasterData(); }
+        }
+
+        async function sfetchAdmin(action, payload = {}) {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            const res = await fetch(`${SUPABASE_URL}/functions/v1/admin-tools`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${session.access_token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ action, payload })
+            });
+            const data = await res.json();
+            if(!res.ok) throw new Error(data.error || "Erro na operação");
+            return data;
+        }
+
+        async function deletePartner(barId, barName) {
+            if(!confirm(`Tem certeza absoluta que deseja EXCLUIR o parceiro "${barName}"? Isso apagará todas as rodadas e prêmios dele. Esta ação não pode ser desfeita.`)) return;
+            try {
+                await sfetchAdmin('delete_partner', { bar_id: barId });
+                alert("Parceiro excluído com sucesso.");
+                loadMasterData();
+            } catch(e) { alert("Erro: " + e.message); }
+        }
+
+        async function resetAllStats() {
+            if(!confirm(`CUIDADO! Isso irá ZERAR todas as rodadas e o dinheiro acumulado de todos os parceiros. Tem certeza que deseja zerar as estatísticas para iniciar um novo dia de testes?`)) return;
+            try {
+                await sfetchAdmin('reset_all_stats');
+                alert("Estatísticas zeradas com sucesso!");
+                loadMasterData();
+            } catch(e) { alert("Erro: " + e.message); }
         }
     </script>
 </body>
