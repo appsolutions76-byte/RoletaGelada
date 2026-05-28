@@ -415,7 +415,8 @@
                         const isNothing = !minor || minor.toUpperCase() === 'NADA' || minor.toUpperCase() === 'IHHH' || minor.toUpperCase() === 'QUASE' || minor.toUpperCase() === 'NÃO FOI DESSA VEZ';
                         const btnPlayAgain = document.getElementById('btn-play-again');
                         
-                        if (minor && minor.toUpperCase() === 'GIRE +1') {
+                        const isGireMais1 = minor && (minor.toUpperCase().trim() === 'GIRE +1' || minor.toUpperCase().includes('GIRE'));
+                        if (isGireMais1) {
                             document.getElementById('result-title').innerText = "GIRE +1 !";
                             document.getElementById('result-title').style.color = "#38bdf8";
                             document.getElementById('result-desc').innerText = "Você ganhou uma rodada grátis!";
