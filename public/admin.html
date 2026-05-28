@@ -213,14 +213,14 @@
         const SUPABASE_URL = 'https://vjupsdakdxexxcdkqfzf.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqdXBzZGFrZHhleHhjZGtxZnpmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2NjY2NDYsImV4cCI6MjA5NTI0MjY0Nn0.5XKPuhn34s-EUf6NXqNwpZysQoJVsyBIHQeVg4wnyyo';
         
-        let supabase = null;
+        let supabaseClient = null;
 
         try {
             if (window.supabase) {
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 
                 // -- Autenticação --
-                supabase.auth.onAuthStateChange((event, session) => {
+                supabaseClient.auth.onAuthStateChange((event, session) => {
                     if (session) {
                         window.BAR_ID = session.user.id;
                         document.getElementById('auth-screen').classList.add('hidden');
@@ -236,11 +236,11 @@
 
         async function handleLogin() {
             if (window.location.protocol === 'file:') return alert("ERRO: Você abriu o arquivo dando dois cliques (file://). O banco de dados só funciona se você rodar num servidor (Live Server) ou na Vercel!");
-            if (!supabase) return alert("Erro crítico de conexão: O banco de dados não carregou. Desative adblockers e atualize a página.");
+            if (!supabaseClient) return alert("Erro crítico de conexão: O banco de dados não carregou. Desative adblockers e atualize a página.");
             try {
                 const e = document.getElementById('auth-email').value;
                 const p = document.getElementById('auth-password').value;
-                const { error } = await supabase.auth.signInWithPassword({ email: e, password: p });
+                const { error } = await supabaseClient.auth.signInWithPassword({ email: e, password: p });
                 if (error) showError(error.message);
             } catch(e) {
                 alert("ERRO GRAVE: " + e.message);
@@ -249,7 +249,7 @@
 
         async function handleSignUp() {
             if (window.location.protocol === 'file:') return alert("ERRO: Você abriu o arquivo dando dois cliques (file://). O banco de dados só funciona se você rodar num servidor (Live Server) ou na Vercel!");
-            if (!supabase) return alert("Erro crítico de conexão: O banco de dados não carregou. Desative adblockers e atualize a página.");
+            if (!supabaseClient) return alert("Erro crítico de conexão: O banco de dados não carregou. Desative adblockers e atualize a página.");
             try {
                 const n = document.getElementById('auth-bar-name').value;
                 const e = document.getElementById('auth-email').value;
@@ -257,7 +257,7 @@
                 
                 if(!n) return showError("Preencha o Nome do Bar para cadastrar.");
 
-                const { error } = await supabase.auth.signUp({ 
+                const { error } = await supabaseClient.auth.signUp({ 
                     email: e, 
                     password: p,
                     options: { data: { bar_name: n } }
@@ -278,7 +278,7 @@
             }
         }
 
-        async function logout() { await supabase.auth.signOut(); }
+        async function logout() { await supabaseClient.auth.signOut(); }
 
         function showError(msg) {
             const el = document.getElementById('auth-error');
@@ -289,7 +289,7 @@
         // -- Dashboard --
         async function loadDashboard() {
             try {
-                const { data: bar, error: barError } = await supabase.from('bars').select('*').eq('id', window.BAR_ID).single();
+                const { data: bar, error: barError } = await supabaseClient.from('bars').select('*').eq('id', window.BAR_ID).single();
                 if(barError) throw new Error("Falha ao ler tabela bars: " + barError.message);
                 if(!bar) return;
 
@@ -314,7 +314,7 @@
                 document.getElementById('mp-token-input').value = bar.mp_access_token;
             }
 
-            const { data: prizes } = await supabase.from('prizes').select('*').eq('bar_id', window.BAR_ID);
+            const { data: prizes } = await supabaseClient.from('prizes').select('*').eq('bar_id', window.BAR_ID);
             const tbody = document.getElementById('table-prizes');
             tbody.innerHTML = '';
             prizes.forEach(p => {
@@ -333,7 +333,7 @@
             });
 
             // Pega as configurações da plataforma para calcular o líquido
-            const { data: settings } = await supabase.from('platform_settings').select('markup_multiplier, platform_fee_percentage').limit(1).single();
+            const { data: settings } = await supabaseClient.from('platform_settings').select('markup_multiplier, platform_fee_percentage').limit(1).single();
             if (settings) {
                 window.MARKUP = settings.markup_multiplier;
                 window.FEE = settings.platform_fee_percentage;
@@ -342,7 +342,7 @@
             }
 
             // Carrega faturamento real
-            const { data: rounds, error: roundsError } = await supabase.from('rounds').select('bet_amount, status').eq('bar_id', window.BAR_ID);
+            const { data: rounds, error: roundsError } = await supabaseClient.from('rounds').select('bet_amount, status').eq('bar_id', window.BAR_ID);
             if (roundsError) {
                 alert("⚠️ AVISO: Erro ao carregar as rodadas. Você executou a migration 04 no banco de dados? Erro: " + roundsError.message);
                 throw new Error("Erro na tabela rounds: " + roundsError.message);
@@ -367,7 +367,7 @@
             // Realtime Sync para produção
             if (!window.realtimeSubscribed) {
                 window.realtimeSubscribed = true;
-                supabase.channel('admin-rounds').on('postgres_changes', { event: '*', schema: 'public', table: 'rounds', filter: `bar_id=eq.${window.BAR_ID}` }, () => {
+                supabaseClient.channel('admin-rounds').on('postgres_changes', { event: '*', schema: 'public', table: 'rounds', filter: `bar_id=eq.${window.BAR_ID}` }, () => {
                     loadDashboard();
                 }).subscribe();
             }
@@ -380,7 +380,7 @@
             if (window.isSimulationMode) return; // tratado acima
             const val = document.getElementById('minor-prizes-input').value;
             const fee = parseFloat(document.getElementById('consolation-fee-input').value) || 0;
-            const { error } = await supabase.from('bars').update({ minor_prizes: val, consolation_fee: fee }).eq('id', window.BAR_ID);
+            const { error } = await supabaseClient.from('bars').update({ minor_prizes: val, consolation_fee: fee }).eq('id', window.BAR_ID);
             const msg = document.getElementById('minor-prizes-msg');
             if (error) {
                 msg.innerText = "Atenção: Para o modo real funcionar, crie a coluna 'minor_prizes' tipo Text na tabela bars no Supabase!";
@@ -398,7 +398,7 @@
             const tBg = document.getElementById('theme-bg-input').value;
             const tLogo = document.getElementById('theme-logo-input').value;
             
-            const { error } = await supabase.from('bars').update({ theme_color: tColor, theme_background: tBg, theme_logo_url: tLogo }).eq('id', window.BAR_ID);
+            const { error } = await supabaseClient.from('bars').update({ theme_color: tColor, theme_background: tBg, theme_logo_url: tLogo }).eq('id', window.BAR_ID);
             const msg = document.getElementById('theme-msg');
             if (error) {
                 msg.innerText = "Atenção: Rode a migration 03 para criar as colunas de tema no Supabase!";
@@ -415,7 +415,7 @@
             const token = document.getElementById('mp-token-input').value;
             if (!token) return alert('Digite um token válido!');
             
-            const { error } = await supabase.from('bars').update({ mp_access_token: token }).eq('id', window.BAR_ID);
+            const { error } = await supabaseClient.from('bars').update({ mp_access_token: token }).eq('id', window.BAR_ID);
             const msg = document.getElementById('mp-token-msg');
             if (error) {
                 msg.innerText = "Erro ao salvar token!";
@@ -437,7 +437,7 @@
             
             if(!name) return alert("Digite um nome!");
 
-            const { error } = await supabase.from('prizes').insert([{ bar_id: window.BAR_ID, name, prize_cost: cost, bet_amount: bet }]);
+            const { error } = await supabaseClient.from('prizes').insert([{ bar_id: window.BAR_ID, name, prize_cost: cost, bet_amount: bet }]);
             if(error) return alert("Erro ao salvar prêmio: " + error.message);
 
             document.getElementById('modal-prize').classList.add('hidden');
@@ -462,7 +462,7 @@
             
             if(!name) return alert("Digite um nome!");
 
-            const { error } = await supabase.from('prizes').update({ name, prize_cost: cost, bet_amount: bet }).eq('id', id);
+            const { error } = await supabaseClient.from('prizes').update({ name, prize_cost: cost, bet_amount: bet }).eq('id', id);
             if(error) return alert("Erro ao atualizar prêmio: " + error.message);
 
             document.getElementById('modal-edit-prize').classList.add('hidden');
@@ -471,7 +471,7 @@
 
         async function deletePrize(id) {
             if(confirm("Deseja realmente excluir este prêmio?")) {
-                await supabase.from('prizes').delete().eq('id', id);
+                await supabaseClient.from('prizes').delete().eq('id', id);
                 loadDashboard();
             }
         }

@@ -89,13 +89,13 @@
         const SUPABASE_URL = 'https://vjupsdakdxexxcdkqfzf.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqdXBzZGFrZHhleHhjZGtxZnpmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2NjY2NDYsImV4cCI6MjA5NTI0MjY0Nn0.5XKPuhn34s-EUf6NXqNwpZysQoJVsyBIHQeVg4wnyyo';
         
-        let supabase = null;
+        let supabaseClient = null;
 
         try {
             if (window.supabase) {
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-                supabase.auth.onAuthStateChange((event, session) => {
+                supabaseClient.auth.onAuthStateChange((event, session) => {
                     if (session && session.user.email === 'appsolutions76@gmail.com') {
                         document.getElementById('auth-screen').classList.add('hidden');
                         document.getElementById('dashboard-screen').classList.remove('hidden');
@@ -109,18 +109,18 @@
         } catch(e) { console.error("Supabase block erro:", e); }
 
         async function handleLogin() {
-            if (!supabase) return alert("Erro crítico de conexão: O banco de dados não carregou. Desative adblockers e atualize a página.");
+            if (!supabaseClient) return alert("Erro crítico de conexão: O banco de dados não carregou. Desative adblockers e atualize a página.");
             const p = document.getElementById('auth-password').value;
-            const { error } = await supabase.auth.signInWithPassword({ email: 'appsolutions76@gmail.com', password: p });
+            const { error } = await supabaseClient.auth.signInWithPassword({ email: 'appsolutions76@gmail.com', password: p });
             if (error) alert(error.message);
         }
 
         async function handleSignUpMaster() {
-            if (!supabase) return alert("Erro crítico de conexão: O banco de dados não carregou. Desative adblockers e atualize a página.");
+            if (!supabaseClient) return alert("Erro crítico de conexão: O banco de dados não carregou. Desative adblockers e atualize a página.");
             try {
                 const p = document.getElementById('auth-password').value;
                 if(!p || p.length < 6) return alert("Digite uma senha de pelo menos 6 caracteres.");
-                const { data, error } = await supabase.auth.signUp({ email: 'appsolutions76@gmail.com', password: p });
+                const { data, error } = await supabaseClient.auth.signUp({ email: 'appsolutions76@gmail.com', password: p });
                 if (error) {
                     if (error.message.includes('already registered')) {
                         alert("Atenção: A conta 'appsolutions76@gmail.com' JÁ EXISTE!\n\nVocê já criou esta conta anteriormente. Por favor, digite sua senha e clique no botão azul 'Entrar no Cofre' em vez de criar.");
@@ -135,17 +135,17 @@
             }
         }
         
-        async function logout() { await supabase.auth.signOut(); }
+        async function logout() { await supabaseClient.auth.signOut(); }
 
         async function loadMasterData() {
-            const { data: settings } = await supabase.from('platform_settings').select('*').limit(1).single();
+            const { data: settings } = await supabaseClient.from('platform_settings').select('*').limit(1).single();
             if (settings) {
                 window.settingsId = settings.id;
                 document.getElementById('input-fee').value = (settings.platform_fee_percentage * 100).toFixed(2);
                 document.getElementById('input-markup').value = settings.markup_multiplier.toFixed(2);
             }
 
-            const { data: bars } = await supabase.from('bars').select('*');
+            const { data: bars } = await supabaseClient.from('bars').select('*');
             document.getElementById('kpi-bars').innerText = bars.length;
             const tbody = document.getElementById('table-bars'); tbody.innerHTML = '';
             bars.forEach(b => {
@@ -153,7 +153,7 @@
                 tbody.innerHTML += `<tr class="border-b border-gray-700/50"><td class="py-4 font-bold">${b.name}</td><td class="py-4">${mp}</td></tr>`;
             });
 
-            const { data: rounds } = await supabase.from('rounds').select('bet_amount, status');
+            const { data: rounds } = await supabaseClient.from('rounds').select('bet_amount, status');
             const paid = rounds.filter(r => ['paid','spinning','completed'].includes(r.status));
             document.getElementById('kpi-rounds').innerText = paid.length;
             const rev = paid.reduce((acc, curr) => acc + Number(curr.bet_amount), 0);
@@ -163,7 +163,7 @@
             // Realtime Sync para produção
             if (!window.realtimeSubscribed) {
                 window.realtimeSubscribed = true;
-                supabase.channel('master-rounds').on('postgres_changes', { event: '*', schema: 'public', table: 'rounds' }, () => {
+                supabaseClient.channel('master-rounds').on('postgres_changes', { event: '*', schema: 'public', table: 'rounds' }, () => {
                     loadMasterData();
                 }).subscribe();
             }
@@ -172,7 +172,7 @@
         async function saveSettings() {
             const fee = Number(document.getElementById('input-fee').value) / 100;
             const markup = Number(document.getElementById('input-markup').value);
-            const { error } = await supabase.from('platform_settings').update({ platform_fee_percentage: fee, markup_multiplier: markup }).eq('id', window.settingsId);
+            const { error } = await supabaseClient.from('platform_settings').update({ platform_fee_percentage: fee, markup_multiplier: markup }).eq('id', window.settingsId);
             if (error) alert(error.message); else { alert("Salvo!"); loadMasterData(); }
         }
     </script>
