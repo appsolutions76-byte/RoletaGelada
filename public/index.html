@@ -421,7 +421,7 @@
                             document.getElementById('result-qr-container').classList.remove('hidden');
                             document.getElementById('result-qr-container').innerHTML = '';
                             new QRCode(document.getElementById('result-qr-container'), { text: `REDEEM_MINOR:${state.roundId}`, width: 150, height: 150 });
-                            document.getElementById('result-shortcode').innerText = state.roundId.split('-')[0].toUpperCase();
+                            document.getElementById('result-shortcode').innerText = state.roundId.substring(0, 4).toUpperCase();
                         } else {
                             document.getElementById('result-title').innerText = "Que pena!";
                             document.getElementById('result-title').style.color = "#ef4444";
@@ -433,7 +433,7 @@
                         document.getElementById('result-qr-container').classList.remove('hidden');
                         document.getElementById('result-qr-container').innerHTML = '';
                         new QRCode(document.getElementById('result-qr-container'), { text: `REDEEM:${state.roundId}`, width: 150, height: 150 });
-                        document.getElementById('result-shortcode').innerText = state.roundId.split('-')[0].toUpperCase();
+                        document.getElementById('result-shortcode').innerText = state.roundId.substring(0, 4).toUpperCase();
                     }
                 }, 4000);
 

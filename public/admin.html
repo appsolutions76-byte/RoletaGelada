@@ -146,7 +146,7 @@
                         📷 ABRIR CÂMERA DO GARÇOM
                     </button>
                     
-                    <div id="scanner-box" class="hidden mt-4 bg-black rounded-xl overflow-hidden border border-gray-700">
+                    <div id="scanner-box" class="hidden mt-4 bg-white text-black p-4 rounded-xl overflow-hidden border border-gray-700">
                         <div id="reader" style="width: 100%;"></div>
                         <button onclick="stopScanner()" class="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 w-full text-sm mt-2">Fechar Câmera</button>
                     </div>
@@ -154,9 +154,9 @@
 
                 <div class="bg-gray-900 p-6 rounded-xl border border-gray-700 text-center">
                     <h3 class="text-gray-400 font-bold mb-4">Código Manual (Plano B)</h3>
-                    <p class="text-xs text-gray-500 mb-4">Se a câmera falhar, digite o código curto mostrado embaixo do QR Code do cliente.</p>
+                    <p class="text-xs text-gray-500 mb-4">Se a câmera falhar, digite o código curto de 4 letras mostrado embaixo do QR Code do cliente.</p>
                     <div class="flex gap-2">
-                        <input type="text" id="manual-code" placeholder="EX: A8B9C2" class="w-full bg-gray-800 border border-gray-600 rounded-lg p-3 text-white uppercase text-center font-bold tracking-widest">
+                        <input type="text" id="manual-code" placeholder="EX: A8B9" maxlength="4" class="w-full bg-gray-800 border border-gray-600 rounded-lg p-3 text-white uppercase text-center font-bold tracking-widest">
                         <button onclick="verifyManualCode()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 rounded-lg">Verificar</button>
                     </div>
                 </div>
@@ -546,28 +546,16 @@
         function onScanFailure(error) { /* Ignora até ler algo válido */ }
 
         async function verifyManualCode() {
-            const shortcode = document.getElementById('manual-code').value.trim().toUpperCase();
-            if(!shortcode || shortcode.length < 5) return alert("Digite um código válido.");
+            const shortcode = document.getElementById('manual-code').value.trim().toLowerCase();
+            if(!shortcode || shortcode.length !== 4) return alert("Digite os 4 caracteres do código mostrado na tela do cliente.");
             
             processPrizeValidation(shortcode, true);
         }
 
         async function processPrizeValidation(roundIdOrShortcode, isShortcode) {
             try {
-                // Se for shortcode, precisamos achar o round_id completo primeiro no banco
-                let targetRoundId = roundIdOrShortcode;
-                
-                if(isShortcode) {
-                    const { data: roundData, error: rErr } = await supabaseClient
-                        .from('rounds')
-                        .select('id')
-                        .filter('id', 'ilike', `${roundIdOrShortcode}%`)
-                        .limit(1)
-                        .single();
-                        
-                    if(rErr || !roundData) throw new Error("Código manual não encontrado nas rodadas.");
-                    targetRoundId = roundData.id;
-                }
+                // Remove a consulta local. A Edge Function agora suporta UUID ou Shortcode de 4 chars.
+                const targetRoundId = roundIdOrShortcode;
 
                 // Chama a Edge Function para checar o status do prêmio
                 const { data: { session } } = await supabaseClient.auth.getSession();

@@ -30,11 +30,32 @@ serve(async (req) => {
     const { round_id, action } = await req.json()
     if (!round_id) throw new Error("round_id is required");
 
+    let target_round_id = round_id;
+    
+    // Se o round_id tiver 4 caracteres, é um shortcode manual digitado pelo garçom
+    if (round_id.length === 4) {
+        const shortcode = round_id.toLowerCase();
+        const startUuid = `${shortcode}0000-0000-0000-0000-000000000000`;
+        const endUuid   = `${shortcode}ffff-ffff-ffff-ffff-ffffffffffff`;
+
+        const { data: searchRounds, error: searchErr } = await supabaseAdmin
+            .from('rounds')
+            .select('id')
+            .gte('id', startUuid)
+            .lte('id', endUuid)
+            .limit(1);
+
+        if (searchErr || !searchRounds || searchRounds.length === 0) {
+            throw new Error("Código manual não encontrado nas rodadas. Verifique se digitou corretamente.");
+        }
+        target_round_id = searchRounds[0].id;
+    }
+
     // Busca a rodada
     const { data: round, error: roundError } = await supabaseAdmin
       .from('rounds')
       .select('*, prizes(*)')
-      .eq('id', round_id)
+      .eq('id', target_round_id)
       .single();
 
     if (roundError || !round) throw new Error("Código inválido ou rodada não encontrada.");
@@ -76,7 +97,7 @@ serve(async (req) => {
         const { error: updateError } = await supabaseAdmin
             .from('rounds')
             .update({ result: newResult })
-            .eq('id', round_id);
+            .eq('id', target_round_id);
 
         if (updateError) throw updateError;
 
