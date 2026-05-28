@@ -574,7 +574,9 @@
                 
                 if(data.already_redeemed) {
                     // TELA DE GOLPE/FRAUDE
-                    alert(`🚨 AVISO DE FRAUDE 🚨\n\n${data.message}\nPrêmio: ${data.prize}`);
+                    const dateObj = new Date(data.redeemed_at);
+                    const formattedDate = dateObj.toLocaleString('pt-BR');
+                    alert(`🚨 AVISO DE FRAUDE 🚨\n\nGOLPE! Prêmio já entregue em ${formattedDate}\nPrêmio: ${data.prize}`);
                     return;
                 }
 

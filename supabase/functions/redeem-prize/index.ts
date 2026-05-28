@@ -73,11 +73,10 @@ serve(async (req) => {
     // Verifica se JÁ FOI RESGATADO
     if (resultText.startsWith('REDEEMED|')) {
         const parts = resultText.split('|');
-        const date = new Date(parts[1]).toLocaleString('pt-BR');
         return new Response(JSON.stringify({ 
             success: false, 
             already_redeemed: true, 
-            message: `GOLPE! Prêmio já entregue em ${date}`,
+            redeemed_at: parts[1],
             prize: parts[2]
         }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
