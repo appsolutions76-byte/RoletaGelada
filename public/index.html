@@ -143,6 +143,7 @@
             <h2 id="result-title" style="font-size: 28px; color: #4ade80;">Parabéns!</h2>
             <p id="result-desc" style="color:#94a3b8;">Mostre este código no balcão.</p>
             <div id="result-qr-container" class="hidden mt-4 mb-4"></div>
+            <p id="result-shortcode" style="color:#38bdf8; font-weight:bold; font-size:18px; letter-spacing:3px; margin-bottom:15px;"></p>
             <button class="btn-blue mt-4" onclick="location.reload()">Jogar Novamente</button>
         </div>
     </div>
@@ -420,6 +421,7 @@
                             document.getElementById('result-qr-container').classList.remove('hidden');
                             document.getElementById('result-qr-container').innerHTML = '';
                             new QRCode(document.getElementById('result-qr-container'), { text: `REDEEM_MINOR:${state.roundId}`, width: 150, height: 150 });
+                            document.getElementById('result-shortcode').innerText = state.roundId.split('-')[0].toUpperCase();
                         } else {
                             document.getElementById('result-title').innerText = "Que pena!";
                             document.getElementById('result-title').style.color = "#ef4444";
@@ -431,6 +433,7 @@
                         document.getElementById('result-qr-container').classList.remove('hidden');
                         document.getElementById('result-qr-container').innerHTML = '';
                         new QRCode(document.getElementById('result-qr-container'), { text: `REDEEM:${state.roundId}`, width: 150, height: 150 });
+                        document.getElementById('result-shortcode').innerText = state.roundId.split('-')[0].toUpperCase();
                     }
                 }, 4000);
 

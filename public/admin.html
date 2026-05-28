@@ -18,6 +18,7 @@
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 </head>
 <body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col">
     
@@ -133,6 +134,32 @@
                 </div>
                 <p class="text-xs text-gray-500 mt-2">A Taxa de Consolação é deduzida do seu Faturamento Líquido para formar um fundo que cobre as despesas dos prêmios menores. O cliente paga apenas o valor base da aposta.</p>
                 <p id="minor-prizes-msg" class="text-green-400 text-sm mt-2 font-bold hidden">Salvo com sucesso!</p>
+            </section>
+
+            <!-- Scanner de Prêmios -->
+            <section class="bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-700">
+                <h2 class="text-2xl font-bold mb-6 text-white border-b border-gray-700 pb-2">Validação de Prêmios (Scanner)</h2>
+                
+                <div class="bg-gray-900 p-6 rounded-xl border border-gray-700 text-center mb-6">
+                    <p class="text-gray-400 text-sm mb-4">Use a câmera do celular para escanear a tela do cliente e dar baixa no prêmio entregue.</p>
+                    <button onclick="startScanner()" id="btn-start-scanner" class="bg-green-600 hover:bg-green-500 text-white font-black py-4 px-8 rounded-xl shadow-lg w-full flex items-center justify-center gap-2">
+                        📷 ABRIR CÂMERA DO GARÇOM
+                    </button>
+                    
+                    <div id="scanner-box" class="hidden mt-4 bg-black rounded-xl overflow-hidden border border-gray-700">
+                        <div id="reader" style="width: 100%;"></div>
+                        <button onclick="stopScanner()" class="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 w-full text-sm mt-2">Fechar Câmera</button>
+                    </div>
+                </div>
+
+                <div class="bg-gray-900 p-6 rounded-xl border border-gray-700 text-center">
+                    <h3 class="text-gray-400 font-bold mb-4">Código Manual (Plano B)</h3>
+                    <p class="text-xs text-gray-500 mb-4">Se a câmera falhar, digite o código curto mostrado embaixo do QR Code do cliente.</p>
+                    <div class="flex gap-2">
+                        <input type="text" id="manual-code" placeholder="EX: A8B9C2" class="w-full bg-gray-800 border border-gray-600 rounded-lg p-3 text-white uppercase text-center font-bold tracking-widest">
+                        <button onclick="verifyManualCode()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 rounded-lg">Verificar</button>
+                    </div>
+                </div>
             </section>
 
             <!-- Meus Prêmios -->
@@ -479,6 +506,110 @@
 
         function showQR() {
             alert("Apresente o QR gerado abaixo.");
+        }
+
+        // ==========================================
+        // SISTEMA ANTI-FRAUDE (SCANNER DE PRÊMIOS)
+        // ==========================================
+        let html5QrcodeScanner = null;
+
+        function startScanner() {
+            document.getElementById('btn-start-scanner').classList.add('hidden');
+            document.getElementById('scanner-box').classList.remove('hidden');
+            
+            if(!html5QrcodeScanner) {
+                html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: {width: 250, height: 250} }, /* verbose= */ false);
+            }
+            html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+        }
+
+        function stopScanner() {
+            if(html5QrcodeScanner) {
+                html5QrcodeScanner.clear().catch(error => { console.error("Failed to clear html5QrcodeScanner. ", error); });
+            }
+            document.getElementById('btn-start-scanner').classList.remove('hidden');
+            document.getElementById('scanner-box').classList.add('hidden');
+        }
+
+        function onScanSuccess(decodedText, decodedResult) {
+            stopScanner();
+            if(decodedText.startsWith('REDEEM:') || decodedText.startsWith('REDEEM_MINOR:')) {
+                const parts = decodedText.split(':');
+                if(parts.length > 1) {
+                    processPrizeValidation(parts[1], false);
+                }
+            } else {
+                alert("QR Code inválido. Este código não é do Roleta Gelada.");
+            }
+        }
+
+        function onScanFailure(error) { /* Ignora até ler algo válido */ }
+
+        async function verifyManualCode() {
+            const shortcode = document.getElementById('manual-code').value.trim().toUpperCase();
+            if(!shortcode || shortcode.length < 5) return alert("Digite um código válido.");
+            
+            processPrizeValidation(shortcode, true);
+        }
+
+        async function processPrizeValidation(roundIdOrShortcode, isShortcode) {
+            try {
+                // Se for shortcode, precisamos achar o round_id completo primeiro no banco
+                let targetRoundId = roundIdOrShortcode;
+                
+                if(isShortcode) {
+                    const { data: roundData, error: rErr } = await supabaseClient
+                        .from('rounds')
+                        .select('id')
+                        .filter('id', 'ilike', `${roundIdOrShortcode}%`)
+                        .limit(1)
+                        .single();
+                        
+                    if(rErr || !roundData) throw new Error("Código manual não encontrado nas rodadas.");
+                    targetRoundId = roundData.id;
+                }
+
+                // Chama a Edge Function para checar o status do prêmio
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                const res = await fetch(`${window.location.origin}/functions/v1/redeem-prize`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ round_id: targetRoundId, action: 'check' })
+                });
+                
+                const data = await res.json();
+                
+                if(!res.ok) {
+                    // Erro (Pode ser que seja de outro bar, não finalizado, etc)
+                    if(data.error) throw new Error(data.error);
+                }
+                
+                if(data.already_redeemed) {
+                    // TELA DE GOLPE/FRAUDE
+                    alert(`🚨 AVISO DE FRAUDE 🚨\n\n${data.message}\nPrêmio: ${data.prize}`);
+                    return;
+                }
+
+                // PRÊMIO VÁLIDO! Pedir confirmação para dar baixa
+                const confirmDelivery = confirm(`✅ PRÊMIO VÁLIDO!\n\nPrêmio: ${data.prize}\n\nVocê já entregou este prêmio ao cliente?\nClique em OK para dar baixa no sistema.`);
+                
+                if(confirmDelivery) {
+                    // Chama a Edge Function para CONFIRMAR
+                    const resConf = await fetch(`${window.location.origin}/functions/v1/redeem-prize`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ round_id: targetRoundId, action: 'redeem' })
+                    });
+                    const dataConf = await resConf.json();
+                    if(!resConf.ok) throw new Error(dataConf.error);
+                    
+                    alert("Baixa confirmada com sucesso! Prêmio entregue.");
+                    document.getElementById('manual-code').value = '';
+                }
+
+            } catch(e) {
+                alert("Erro ao validar: " + e.message);
+            }
         }
     </script>
 </body>
