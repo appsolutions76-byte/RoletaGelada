@@ -144,7 +144,7 @@
             <p id="result-desc" style="color:#94a3b8;">Mostre este código no balcão.</p>
             <div id="result-qr-container" class="hidden mt-4 mb-4"></div>
             <p id="result-shortcode" style="color:#38bdf8; font-weight:bold; font-size:18px; letter-spacing:3px; margin-bottom:15px;"></p>
-            <button class="btn-blue mt-4" onclick="location.reload()">Jogar Novamente</button>
+            <button class="btn-blue mt-4" id="btn-play-again" onclick="location.reload()">Jogar Novamente</button>
         </div>
     </div>
 
@@ -413,8 +413,30 @@
                         const minor = state.finalMinorPrize;
                         // Verifica se é uma string "negativa" conhecida
                         const isNothing = !minor || minor.toUpperCase() === 'NADA' || minor.toUpperCase() === 'IHHH' || minor.toUpperCase() === 'QUASE' || minor.toUpperCase() === 'NÃO FOI DESSA VEZ';
+                        const btnPlayAgain = document.getElementById('btn-play-again');
                         
-                        if (!isNothing) {
+                        if (minor && minor.toUpperCase() === 'GIRE +1') {
+                            document.getElementById('result-title').innerText = "GIRE +1 !";
+                            document.getElementById('result-title').style.color = "#38bdf8";
+                            document.getElementById('result-desc').innerText = "Você ganhou uma rodada grátis!";
+                            document.getElementById('result-qr-container').classList.add('hidden');
+                            document.getElementById('result-shortcode').innerText = "";
+                            
+                            btnPlayAgain.innerText = "Girar Novamente (Grátis!)";
+                            btnPlayAgain.onclick = () => {
+                                document.getElementById('step-result').classList.add('hidden');
+                                document.getElementById('step-spin').classList.remove('hidden');
+                                
+                                // Reseta a UI da roleta
+                                document.getElementById('btn-girar').disabled = false;
+                                document.getElementById('btn-girar').innerText = "GIRAR";
+                                document.getElementById('roleta-text-display').innerText = "ROTAÇÃO";
+                                
+                                // Restaura o botão original para a próxima vez
+                                btnPlayAgain.innerText = "Jogar Novamente";
+                                btnPlayAgain.onclick = () => location.reload();
+                            };
+                        } else if (!isNothing) {
                             document.getElementById('result-title').innerText = "Prêmio Menor!";
                             document.getElementById('result-title').style.color = "#facc15";
                             document.getElementById('result-desc').innerText = `Consolação: ${minor}. Mostre no balcão!`;
@@ -426,6 +448,8 @@
                             document.getElementById('result-title').innerText = "Que pena!";
                             document.getElementById('result-title').style.color = "#ef4444";
                             document.getElementById('result-desc').innerText = minor ? minor : "Não foi dessa vez.";
+                            document.getElementById('result-qr-container').classList.add('hidden');
+                            document.getElementById('result-shortcode').innerText = "";
                         }
                     } else {
                         document.getElementById('result-title').innerText = "Parabéns!";
