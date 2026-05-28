@@ -204,9 +204,11 @@
         }
 
         async function init() {
-            if (!BAR_ID) {
-                document.getElementById('bar-name').innerText = "Bar não encontrado. Solicite o link correto.";
-                document.getElementById('step-list').innerHTML = "<p class='text-center text-red-500 font-bold mt-10'>Erro: Link inválido. Falta a identificação do bar na URL.</p>";
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            
+            if (!BAR_ID || !uuidRegex.test(BAR_ID)) {
+                document.getElementById('bar-name').innerText = "Link de Bar Inválido ou Desatualizado";
+                document.getElementById('step-list').innerHTML = "<p class='text-center text-red-500 font-bold mt-10'>Você está usando um link antigo (modo simulação).<br><br>Peça ao dono do bar para gerar um NOVO LINK no painel dele.</p>";
                 return;
             }
             try {

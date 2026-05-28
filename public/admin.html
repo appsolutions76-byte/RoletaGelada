@@ -252,8 +252,17 @@
                 password: p,
                 options: { data: { bar_name: n } }
             });
-            if (error) showError(error.message);
-            else alert("Conta criada! Verifique seu e-mail para confirmar (ou libere o login no painel do Supabase).");
+            
+            if (error) {
+                if (error.message.includes('already registered')) {
+                    alert("Atenção: Este e-mail JÁ POSSUI CONTA!\n\nVocê já criou essa conta anteriormente. Por favor, digite sua senha e clique no botão azul 'Entrar' (em vez de 'Criar Conta').\n\nSe tiver esquecido a senha, recrie a conta com outro e-mail.");
+                    showError("Este e-mail já existe. Clique em Entrar.");
+                } else {
+                    showError("ERRO: " + error.message);
+                }
+            } else {
+                alert("Conta do Bar criada com sucesso!\n\nSe o seu Supabase estiver exigindo confirmação de e-mail, você precisará clicar no link enviado para " + e + " antes de conseguir fazer login.\n\nPara facilitar, vá no painel do Supabase -> Authentication -> Providers -> Email e desative a opção 'Confirm email'.");
+            }
         }
 
         async function logout() { await supabase.auth.signOut(); }

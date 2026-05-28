@@ -115,18 +115,20 @@
         }
 
         async function handleSignUpMaster() {
-            console.log("handleSignUpMaster START");
             try {
                 const p = document.getElementById('auth-password').value;
-                console.log("Password length:", p.length);
                 if(!p || p.length < 6) return alert("Digite uma senha de pelo menos 6 caracteres.");
-                console.log("Calling supabase.auth.signUp...");
                 const { data, error } = await supabase.auth.signUp({ email: 'appsolutions76@gmail.com', password: p });
-                console.log("SignUp response:", {data, error});
-                if (error) alert("ERRO SUPABASE: " + error.message); 
-                else alert("Conta de dono criada. Confirme o e-mail (ou desative a confirmação de e-mail no Supabase) para logar.");
+                if (error) {
+                    if (error.message.includes('already registered')) {
+                        alert("Atenção: A conta 'appsolutions76@gmail.com' JÁ EXISTE!\n\nVocê já criou esta conta anteriormente. Por favor, digite sua senha e clique no botão azul 'Entrar no Cofre' em vez de criar.");
+                    } else {
+                        alert("ERRO SUPABASE: " + error.message); 
+                    }
+                } else {
+                    alert("Conta de dono criada com sucesso! Confirme o e-mail (ou desative a confirmação de e-mail no painel do Supabase -> Authentication -> Providers -> Email) para conseguir fazer o login.");
+                }
             } catch (err) {
-                console.error("FATAL CATCH ERROR:", err);
                 alert("Erro fatal no código: " + err.message);
             }
         }
