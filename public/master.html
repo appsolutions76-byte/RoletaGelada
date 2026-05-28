@@ -109,12 +109,14 @@
         } catch(e) { console.error("Supabase block erro:", e); }
 
         async function handleLogin() {
+            if (!supabase) return alert("Erro crítico de conexão: O banco de dados não carregou. Desative adblockers e atualize a página.");
             const p = document.getElementById('auth-password').value;
             const { error } = await supabase.auth.signInWithPassword({ email: 'appsolutions76@gmail.com', password: p });
             if (error) alert(error.message);
         }
 
         async function handleSignUpMaster() {
+            if (!supabase) return alert("Erro crítico de conexão: O banco de dados não carregou. Desative adblockers e atualize a página.");
             try {
                 const p = document.getElementById('auth-password').value;
                 if(!p || p.length < 6) return alert("Digite uma senha de pelo menos 6 caracteres.");

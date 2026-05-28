@@ -234,34 +234,44 @@
         } catch(e) { console.error("Supabase block erro:", e); }
 
         async function handleLogin() {
-            const e = document.getElementById('auth-email').value;
-            const p = document.getElementById('auth-password').value;
-            const { error } = await supabase.auth.signInWithPassword({ email: e, password: p });
-            if (error) showError(error.message);
+            if (!supabase) return alert("Erro crítico de conexão: O banco de dados não carregou. Desative adblockers e atualize a página.");
+            try {
+                const e = document.getElementById('auth-email').value;
+                const p = document.getElementById('auth-password').value;
+                const { error } = await supabase.auth.signInWithPassword({ email: e, password: p });
+                if (error) showError(error.message);
+            } catch(e) {
+                alert("ERRO GRAVE: " + e.message);
+            }
         }
 
         async function handleSignUp() {
-            const n = document.getElementById('auth-bar-name').value;
-            const e = document.getElementById('auth-email').value;
-            const p = document.getElementById('auth-password').value;
-            
-            if(!n) return showError("Preencha o Nome do Bar para cadastrar.");
+            if (!supabase) return alert("Erro crítico de conexão: O banco de dados não carregou. Desative adblockers e atualize a página.");
+            try {
+                const n = document.getElementById('auth-bar-name').value;
+                const e = document.getElementById('auth-email').value;
+                const p = document.getElementById('auth-password').value;
+                
+                if(!n) return showError("Preencha o Nome do Bar para cadastrar.");
 
-            const { error } = await supabase.auth.signUp({ 
-                email: e, 
-                password: p,
-                options: { data: { bar_name: n } }
-            });
-            
-            if (error) {
-                if (error.message.includes('already registered')) {
-                    alert("Atenção: Este e-mail JÁ POSSUI CONTA!\n\nVocê já criou essa conta anteriormente. Por favor, digite sua senha e clique no botão azul 'Entrar' (em vez de 'Criar Conta').\n\nSe tiver esquecido a senha, recrie a conta com outro e-mail.");
-                    showError("Este e-mail já existe. Clique em Entrar.");
+                const { error } = await supabase.auth.signUp({ 
+                    email: e, 
+                    password: p,
+                    options: { data: { bar_name: n } }
+                });
+                
+                if (error) {
+                    if (error.message.includes('already registered')) {
+                        alert("Atenção: Este e-mail JÁ POSSUI CONTA!\n\nVocê já criou essa conta anteriormente. Por favor, digite sua senha e clique no botão azul 'Entrar' (em vez de 'Criar Conta').\n\nSe tiver esquecido a senha, recrie a conta com outro e-mail.");
+                        showError("Este e-mail já existe. Clique em Entrar.");
+                    } else {
+                        showError("ERRO: " + error.message);
+                    }
                 } else {
-                    showError("ERRO: " + error.message);
+                    alert("Conta do Bar criada com sucesso!\n\nSe o seu Supabase estiver exigindo confirmação de e-mail, você precisará clicar no link enviado para " + e + " antes de conseguir fazer login.\n\nPara facilitar, vá no painel do Supabase -> Authentication -> Providers -> Email e desative a opção 'Confirm email'.");
                 }
-            } else {
-                alert("Conta do Bar criada com sucesso!\n\nSe o seu Supabase estiver exigindo confirmação de e-mail, você precisará clicar no link enviado para " + e + " antes de conseguir fazer login.\n\nPara facilitar, vá no painel do Supabase -> Authentication -> Providers -> Email e desative a opção 'Confirm email'.");
+            } catch(e) {
+                alert("ERRO GRAVE: " + e.message);
             }
         }
 
