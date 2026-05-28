@@ -66,11 +66,28 @@ serve(async (req) => {
     
     // O resto vai pro dono do bar (O MP faz isso automaticamente ao passarmos a application_fee)
     // O pagamento é feito usando o token do Bar (Marketplace payment)
-    const barToken = prize.bars.mp_access_token;
+    // O pagamento é feito usando o token do Bar (Marketplace payment)
+    let barToken = prize.bars.mp_access_token;
 
-    if (!barToken) {
+    if (!barToken || barToken.trim() === '') {
       return new Response(JSON.stringify({ error: 'Este bar não configurou o Mercado Pago ainda.' }), {
         status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    barToken = barToken.trim();
+
+    // 4. Mock para Testes (Se o usuário digitar 'teste', 'test-token', ou um token muito curto)
+    const isMockToken = barToken.toUpperCase().includes('TESTE') || barToken.toUpperCase().includes('TEST-TOKEN') || barToken.length < 15;
+    
+    if (isMockToken) {
+      // Simular um atraso da API
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return new Response(JSON.stringify({ 
+        round_id: round.id,
+        qr_code: `MOCK_QR_CODE_FOR_ROUND_${round.id}`
+      }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -84,18 +101,6 @@ serve(async (req) => {
       notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mp-webhook`,
       application_fee: platformFee // Aqui cobramos a taxa gota a gota!
     };
-
-    // 4. Mock para Testes
-    if (barToken === 'TEST-TOKEN') {
-      // Simular um atraso da API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      return new Response(JSON.stringify({ 
-        round_id: round.id,
-        qr_code: `MOCK_QR_CODE_FOR_ROUND_${round.id}`
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
 
     const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {
       method: 'POST',
