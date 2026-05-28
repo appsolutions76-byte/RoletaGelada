@@ -11,8 +11,9 @@
 
         function copyAppUrl() {
             if (!window.BAR_ID) return alert("Erro: Bar ID não encontrado. Faça login novamente.");
+            const barName = document.getElementById('nav-bar-name').innerText;
             const appUrl = `${window.location.origin}/index.html?bar=${window.BAR_ID}`;
-            prompt("Link Oficial do seu Bar gerado com sucesso!\n\nCopie o link abaixo para abrir no celular e rodar o aplicativo:", appUrl);
+            prompt(`Link Oficial do Bar: ${barName} gerado com sucesso!\n\nCopie o link abaixo para abrir no celular e rodar o aplicativo:`, appUrl);
         }
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
