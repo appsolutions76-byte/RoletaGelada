@@ -443,7 +443,14 @@
                             document.getElementById('result-desc').innerText = `Consolação: ${minor}. Mostre no balcão!`;
                             document.getElementById('result-qr-container').classList.remove('hidden');
                             document.getElementById('result-qr-container').innerHTML = '';
-                            new QRCode(document.getElementById('result-qr-container'), { text: `REDEEM_MINOR:${state.roundId}`, width: 150, height: 150 });
+                            new QRCode(document.getElementById('result-qr-container'), { 
+                                text: `REDEEM_MINOR:${state.roundId}`, 
+                                width: 200, 
+                                height: 200,
+                                colorDark: "#000000",
+                                colorLight: "#ffffff",
+                                correctLevel: 1 // Nível L para quadrados maiores e mais fáceis de ler
+                            });
                             document.getElementById('result-shortcode').innerText = state.roundId.substring(0, 4).toUpperCase();
                         } else {
                             document.getElementById('result-title').innerText = "Que pena!";
@@ -457,7 +464,14 @@
                         document.getElementById('result-desc').innerText = `Você ganhou: ${prizeResult}. Mostre este QR ao garçom.`;
                         document.getElementById('result-qr-container').classList.remove('hidden');
                         document.getElementById('result-qr-container').innerHTML = '';
-                        new QRCode(document.getElementById('result-qr-container'), { text: `REDEEM:${state.roundId}`, width: 150, height: 150 });
+                        new QRCode(document.getElementById('result-qr-container'), { 
+                            text: `REDEEM:${state.roundId}`, 
+                            width: 200, 
+                            height: 200,
+                            colorDark: "#000000",
+                            colorLight: "#ffffff",
+                            correctLevel: 1 // Nível L para quadrados maiores e mais fáceis de ler
+                        });
                         document.getElementById('result-shortcode').innerText = state.roundId.substring(0, 4).toUpperCase();
                     }
                 }, 4000);
