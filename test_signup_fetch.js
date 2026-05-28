@@ -10,9 +10,8 @@ async function testSignup() {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            email: 'test_real_444@gmail.com',
-            password: 'password123',
-            data: { bar_name: 'Boteco Teste 444' }
+            email: 'appsolutions76@gmail.com',
+            password: 'password123'
         })
     });
     const data = await res.json();

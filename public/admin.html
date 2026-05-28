@@ -7,6 +7,7 @@
     <script>
         // Declaramos variáveis globais cedo
         window.BAR_ID = null;
+        console.log("APP VERSION: REAL MODE FINAL - NO SIMULATION v2.0");
 
         function copyAppUrl() {
             if (!window.BAR_ID) return alert("Erro: Bar ID não encontrado. Faça login novamente.");
@@ -234,6 +235,7 @@
         } catch(e) { console.error("Supabase block erro:", e); }
 
         async function handleLogin() {
+            if (window.location.protocol === 'file:') return alert("ERRO: Você abriu o arquivo dando dois cliques (file://). O banco de dados só funciona se você rodar num servidor (Live Server) ou na Vercel!");
             if (!supabase) return alert("Erro crítico de conexão: O banco de dados não carregou. Desative adblockers e atualize a página.");
             try {
                 const e = document.getElementById('auth-email').value;
@@ -246,6 +248,7 @@
         }
 
         async function handleSignUp() {
+            if (window.location.protocol === 'file:') return alert("ERRO: Você abriu o arquivo dando dois cliques (file://). O banco de dados só funciona se você rodar num servidor (Live Server) ou na Vercel!");
             if (!supabase) return alert("Erro crítico de conexão: O banco de dados não carregou. Desative adblockers e atualize a página.");
             try {
                 const n = document.getElementById('auth-bar-name').value;
