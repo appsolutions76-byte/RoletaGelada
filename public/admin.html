@@ -559,7 +559,7 @@
 
                 // Chama a Edge Function para checar o status do prêmio
                 const { data: { session } } = await supabaseClient.auth.getSession();
-                const res = await fetch(`${window.location.origin}/functions/v1/redeem-prize`, {
+                const res = await fetch(`${SUPABASE_URL}/functions/v1/redeem-prize`, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ round_id: targetRoundId, action: 'check' })
@@ -583,7 +583,7 @@
                 
                 if(confirmDelivery) {
                     // Chama a Edge Function para CONFIRMAR
-                    const resConf = await fetch(`${window.location.origin}/functions/v1/redeem-prize`, {
+                    const resConf = await fetch(`${SUPABASE_URL}/functions/v1/redeem-prize`, {
                         method: 'POST',
                         headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
                         body: JSON.stringify({ round_id: targetRoundId, action: 'redeem' })
