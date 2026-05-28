@@ -411,9 +411,11 @@
 
         // -- Dashboard --
         async function loadDashboard() {
-            if (window.isSimulationMode) return;
-            const { data: bar } = await supabase.from('bars').select('*').eq('id', window.BAR_ID).single();
-            if(!bar) return;
+            try {
+                if (window.isSimulationMode) return;
+                const { data: bar, error: barError } = await supabase.from('bars').select('*').eq('id', window.BAR_ID).single();
+                if(barError) throw new Error("Falha ao ler tabela bars: " + barError.message);
+                if(!bar) return;
 
             document.getElementById('nav-bar-name').innerText = bar.name;
             
@@ -464,7 +466,12 @@
             }
 
             // Carrega faturamento real
-            const { data: rounds } = await supabase.from('rounds').select('bet_amount, status').eq('bar_id', window.BAR_ID);
+            const { data: rounds, error: roundsError } = await supabase.from('rounds').select('bet_amount, status').eq('bar_id', window.BAR_ID);
+            if (roundsError) {
+                alert("⚠️ AVISO: Erro ao carregar as rodadas. Você executou a migration 04 no banco de dados? Erro: " + roundsError.message);
+                throw new Error("Erro na tabela rounds: " + roundsError.message);
+            }
+
             const paid = rounds ? rounds.filter(r => ['paid','spinning','completed'].includes(r.status)) : [];
             const rev = paid.reduce((acc, curr) => acc + Number(curr.bet_amount), 0);
             const totalSpins = paid.length;
@@ -487,6 +494,9 @@
                 supabase.channel('admin-rounds').on('postgres_changes', { event: '*', schema: 'public', table: 'rounds', filter: `bar_id=eq.${window.BAR_ID}` }, () => {
                     loadDashboard();
                 }).subscribe();
+            }
+            } catch (err) {
+                console.error("Erro Crítico no loadDashboard:", err);
             }
         }
 
@@ -552,7 +562,11 @@
             const cost = document.getElementById('prize-cost').value;
             const bet = document.getElementById('prize-bet').value;
             
-            await supabase.from('prizes').insert([{ bar_id: window.BAR_ID, name, prize_cost: cost, bet_amount: bet }]);
+            if(!name) return alert("Digite um nome!");
+
+            const { error } = await supabase.from('prizes').insert([{ bar_id: window.BAR_ID, name, prize_cost: cost, bet_amount: bet }]);
+            if(error) return alert("Erro ao salvar prêmio: " + error.message);
+
             document.getElementById('modal-prize').classList.add('hidden');
             loadDashboard();
         }
@@ -575,7 +589,9 @@
             
             if(!name) return alert("Digite um nome!");
 
-            await supabase.from('prizes').update({ name, prize_cost: cost, bet_amount: bet }).eq('id', id);
+            const { error } = await supabase.from('prizes').update({ name, prize_cost: cost, bet_amount: bet }).eq('id', id);
+            if(error) return alert("Erro ao atualizar prêmio: " + error.message);
+
             document.getElementById('modal-edit-prize').classList.add('hidden');
             loadDashboard();
         }

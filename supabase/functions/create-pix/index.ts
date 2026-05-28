@@ -48,6 +48,7 @@ serve(async (req) => {
       .from('rounds')
       .insert([{ 
           prize_id, 
+          bar_id: prize.bar_id, // Novo campo corrigindo o bug do Conta Real
           player_name: player_name || 'Anônimo', 
           bet_amount: totalBetAmount, 
           status: 'pending' 
