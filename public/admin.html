@@ -177,7 +177,7 @@
                     <button onclick="handleLogin()" class="w-1/2 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg transition">Entrar</button>
                     <button onclick="handleSignUp()" class="w-1/2 bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-lg transition">Criar Conta</button>
                 </div>
-                <div class="pt-4 border-t border-gray-700 mt-2">
+                <div class="pt-4 border-t border-gray-700 mt-2 hidden">
                     <button type="button" onclick="handleSimulationLogin()" class="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-3 rounded-lg transition">Modo Simulação (Teste Rápido)</button>
                 </div>
                 <p id="auth-error" class="text-red-400 text-sm text-center font-bold hidden"></p>
@@ -218,11 +218,16 @@
             <!-- Auth MP -->
             <section class="bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-700">
                 <h2 class="text-2xl font-bold mb-2 text-white">Conta Mercado Pago</h2>
-                <p class="text-gray-400 mb-4">Conecte sua conta do Mercado Pago para receber o dinheiro das jogadas (Pix) direto na sua conta.</p>
+                <p class="text-gray-400 mb-4">Cole seu Access Token (Simulação ou Real) do Mercado Pago para receber o dinheiro das jogadas (Pix).</p>
                 <div id="mp-status" class="mb-4 font-bold text-red-400">❌ Não conectado</div>
-                <a id="btn-connect-mp" href="#" class="inline-block bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-3 rounded-lg shadow transition">
-                    Conectar Mercado Pago
-                </a>
+                <div class="flex gap-4 items-end">
+                    <div class="w-2/3">
+                        <label class="text-xs font-bold text-gray-500 mb-1 block">Access Token (Mercado Pago)</label>
+                        <input type="text" id="mp-token-input" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none" placeholder="APP_USR-...">
+                    </div>
+                    <button onclick="saveMPToken()" class="w-1/3 bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-3 rounded-lg shadow transition">Salvar Token</button>
+                </div>
+                <p id="mp-token-msg" class="text-green-400 text-sm mt-2 font-bold hidden">Token salvo com sucesso!</p>
             </section>
 
             <!-- Personalização do App -->
@@ -428,10 +433,7 @@
             if (bar.mp_access_token) {
                 document.getElementById('mp-status').innerHTML = "✅ Conectado ao Mercado Pago";
                 document.getElementById('mp-status').className = "mb-4 font-semibold text-green-600";
-                document.getElementById('btn-connect-mp').classList.add('hidden');
-            } else {
-                const CLIENT_ID = 'SEU_MERCADO_PAGO_APP_CLIENT_ID'; // Edite no código
-                document.getElementById('btn-connect-mp').href = `https://auth.mercadopago.com/authorization?client_id=${CLIENT_ID}&response_type=code&platform_id=mp&state=${BAR_ID}&redirect_uri=${SUPABASE_URL}/functions/v1/mp-oauth`;
+                document.getElementById('mp-token-input').value = bar.mp_access_token;
             }
 
             const { data: prizes } = await supabase.from('prizes').select('*').eq('bar_id', window.BAR_ID);
@@ -520,6 +522,26 @@
             } else {
                 msg.innerText = "Tema salvo com sucesso!";
                 msg.className = "text-green-400 text-sm mt-2 font-bold";
+            }
+            msg.classList.remove('hidden');
+            setTimeout(() => msg.classList.add('hidden'), 5000);
+        }
+
+        async function saveMPToken() {
+            if (window.isSimulationMode) return;
+            const token = document.getElementById('mp-token-input').value;
+            if (!token) return alert('Digite um token válido!');
+            
+            const { error } = await supabase.from('bars').update({ mp_access_token: token }).eq('id', window.BAR_ID);
+            const msg = document.getElementById('mp-token-msg');
+            if (error) {
+                msg.innerText = "Erro ao salvar token!";
+                msg.className = "text-red-400 text-sm mt-2 font-bold";
+            } else {
+                msg.innerText = "Token salvo com sucesso!";
+                msg.className = "text-green-400 text-sm mt-2 font-bold";
+                document.getElementById('mp-status').innerHTML = "✅ Conectado ao Mercado Pago";
+                document.getElementById('mp-status').className = "mb-4 font-semibold text-green-600";
             }
             msg.classList.remove('hidden');
             setTimeout(() => msg.classList.add('hidden'), 5000);
