@@ -152,7 +152,7 @@
         const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqdXBzZGFrZHhleHhjZGtxZnpmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2NjY2NDYsImV4cCI6MjA5NTI0MjY0Nn0.5XKPuhn34s-EUf6NXqNwpZysQoJVsyBIHQeVg4wnyyo';
         
         const params = new URLSearchParams(window.location.search);
-        const BAR_ID = params.get('bar') || '11111111-1111-1111-1111-111111111111';
+        const BAR_ID = params.get('bar');
 
         let state = { prizeId: null, prizeName: null, roundId: null, prizeBet: 0, finalMinorPrize: null, sliceMap: {} };
 
@@ -204,32 +204,30 @@
         }
 
         async function init() {
+            if (!BAR_ID) {
+                document.getElementById('bar-name').innerText = "Bar não encontrado. Solicite o link correto.";
+                document.getElementById('step-list').innerHTML = "<p class='text-center text-red-500 font-bold mt-10'>Erro: Link inválido. Falta a identificação do bar na URL.</p>";
+                return;
+            }
             try {
                 let prizes = [];
                 let minorPrizes = ["Amendoim", "Shot de Cachaça", "IHHH", "GIRE +1", "NADA"];
 
-                if (BAR_ID === 'simulacao-123') {
-                    document.getElementById('bar-name').innerText = 'Bar Parceiro (Modo Simulação)';
-                    const localPrizes = localStorage.getItem('simPrizes');
-                    prizes = localPrizes ? JSON.parse(localPrizes) : [{ id: 'sim-1', name: 'Heineken 600ml', bet_amount: 5.00 }];
-                    
-                    let simThemeColor = localStorage.getItem('simThemeColor');
-                    let simThemeBg = localStorage.getItem('simThemeBg');
-                    let simThemeLogo = localStorage.getItem('simThemeLogo');
-                    applyTheme(simThemeColor, simThemeBg, simThemeLogo);
+                const bars = await sfetch(`/rest/v1/bars?id=eq.${BAR_ID}&select=name,minor_prizes,consolation_fee,theme_color,theme_background,theme_logo_url`);
+                if(bars && bars.length > 0) {
+                    const bar = bars[0];
+                    document.getElementById('bar-name').innerText = bar.name;
+                    if(bar.minor_prizes) minorPrizes = bar.minor_prizes.split(',').map(s => s.trim());
+                    window.CONSOLATION_FEE = parseFloat(bar.consolation_fee) || 0;
+                    applyTheme(bar.theme_color, bar.theme_background, bar.theme_logo_url);
                 } else {
-                    const bars = await sfetch(`/rest/v1/bars?id=eq.${BAR_ID}&select=name,minor_prizes,consolation_fee,theme_color,theme_background,theme_logo_url`);
-                    if(bars && bars.length > 0) {
-                        const bar = bars[0];
-                        document.getElementById('bar-name').innerText = bar.name;
-                        if(bar.minor_prizes) minorPrizes = bar.minor_prizes.split(',').map(s => s.trim());
-                        window.CONSOLATION_FEE = parseFloat(bar.consolation_fee) || 0;
-                        applyTheme(bar.theme_color, bar.theme_background, bar.theme_logo_url);
-                    }
-
-                    // Busca prêmios reais
-                    prizes = await sfetch(`/rest/v1/prizes?bar_id=eq.${BAR_ID}&active=eq.true&select=*`);
+                    document.getElementById('bar-name').innerText = "Bar não encontrado.";
+                    document.getElementById('step-list').innerHTML = "<p class='text-center text-red-500 font-bold mt-10'>Bar inativo ou inexistente no banco de dados.</p>";
+                    return;
                 }
+
+                // Busca prêmios reais
+                prizes = await sfetch(`/rest/v1/prizes?bar_id=eq.${BAR_ID}&active=eq.true&select=*`);
 
                 // Injeta prêmios menores na roleta
                 const losingAngles = [30, 150, 210, 270, 330];
@@ -256,15 +254,8 @@
                     const div = document.createElement('div');
                     div.className = 'prize-card';
                     
-                    let vaultDebug = "";
-                    if (BAR_ID === 'simulacao-123') {
-                        let vaults = JSON.parse(localStorage.getItem('simVaults') || '{}');
-                        let currentVault = vaults[p.id] || 0;
-                        vaultDebug = `<span style="font-size: 11px; color: #fbbf24; display:block;">Cofre: R$ ${currentVault.toFixed(2)}</span>`;
-                    }
-                    
                     div.innerHTML = `
-                        <div><p class="prize-name">${p.name}</p>${vaultDebug}</div>
+                        <div><p class="prize-name">${p.name}</p></div>
                         <div><p class="prize-price">R$ ${p.bet_amount.toFixed(2)}</p></div>
                     `;
                     div.onclick = () => selectPrize(p.id, p.name, p.bet_amount);
@@ -290,37 +281,6 @@
         async function generatePix() {
             const btn = document.getElementById('btn-gerar-pix');
             btn.disabled = true; btn.innerText = "Gerando...";
-
-            if (BAR_ID === 'simulacao-123') {
-                state.roundId = 'sim-round-123';
-                btn.classList.add('hidden');
-                document.getElementById('pix-area').classList.remove('hidden');
-                document.getElementById('qr-container').innerHTML = '';
-                new QRCode(document.getElementById('qr-container'), { text: "MOCK_QR_CODE", width: 150, height: 150 });
-
-                const mockBtn = document.createElement('button');
-                mockBtn.className = 'btn-green';
-                mockBtn.innerText = 'Simular Pagamento (Teste)';
-                mockBtn.onclick = () => {
-                    mockBtn.innerText = 'Simulando...'; mockBtn.disabled = true;
-                    
-                    // Registra o faturamento no localStorage para os painéis testarem
-                    let simRev = parseFloat(localStorage.getItem('simRevenue') || '0');
-                    let simSpins = parseInt(localStorage.getItem('simSpins') || '0');
-                    
-                    localStorage.setItem('simRevenue', (simRev + state.prizeBet).toString());
-                    localStorage.setItem('simSpins', (simSpins + 1).toString());
-                    
-                    // Acumula no cofre (Vault) da simulação
-                    let vaults = JSON.parse(localStorage.getItem('simVaults') || '{}');
-                    vaults[state.prizeId] = (vaults[state.prizeId] || 0) + state.prizeBet;
-                    localStorage.setItem('simVaults', JSON.stringify(vaults));
-                    
-                    startRoulette();
-                };
-                document.getElementById('pix-area').appendChild(mockBtn);
-                return;
-            }
 
             try {
                 const data = await sfetch(`/functions/v1/create-pix`, 'POST', { prize_id: state.prizeId });
@@ -380,31 +340,8 @@
             btn.innerText = "Sorteando...";
 
             try {
-                let prizeResult = "NADA";
-                if (BAR_ID === 'simulacao-123') {
-                    // Lógica realística simulada: Ganha apenas se o Cofre >= Custo Real * Markup
-                    let vaults = JSON.parse(localStorage.getItem('simVaults') || '{}');
-                    let currentVault = vaults[state.prizeId] || 0;
-                    
-                    // Busca o prêmio e o markup
-                    const p = window.loadedPrizes ? window.loadedPrizes.find(pr => pr.id === state.prizeId) : null;
-                    const simSettings = JSON.parse(localStorage.getItem('simSettings')) || { markup: 1.50 };
-                    
-                    // Target = custo * markup
-                    const targetVault = (p && p.prize_cost) ? (p.prize_cost * simSettings.markup) : 0;
-                    
-                    if (targetVault > 0 && currentVault >= targetVault) {
-                        prizeResult = state.prizeName; // GANHOU!
-                        // Deduz o custo do cofre (na vida real, o cofre zera ou deduz o target)
-                        vaults[state.prizeId] = currentVault - targetVault;
-                        localStorage.setItem('simVaults', JSON.stringify(vaults));
-                    } else {
-                        prizeResult = 'NADA'; // PERDEU (Cofre não encheu)
-                    }
-                } else {
-                    const data = await sfetch(`/functions/v1/spin-roulette`, 'POST', { round_id: state.roundId });
-                    prizeResult = data.prize;
-                }
+                const data = await sfetch(`/functions/v1/spin-roulette`, 'POST', { round_id: state.roundId });
+                let prizeResult = data.prize;
                 
                 let finalRotation = 0;
                 if (prizeResult === 'NADA' || prizeResult === 'GIRE +1') {

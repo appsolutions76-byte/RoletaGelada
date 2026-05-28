@@ -6,55 +6,6 @@
     <title>Master Admin - Roleta Gelada Pro</title>
     <script>
         window.settingsId = null;
-        window.isSimulationMode = false;
-
-        function handleSimulationLogin() {
-            try {
-                window.isSimulationMode = true;
-                document.getElementById('auth-screen').classList.add('hidden');
-                document.getElementById('dashboard-screen').classList.remove('hidden');
-
-                let simSettings = JSON.parse(localStorage.getItem('simSettings')) || { fee: 5.00, markup: 1.50 };
-                document.getElementById('input-fee').value = simSettings.fee.toFixed(2);
-                document.getElementById('input-markup').value = simSettings.markup.toFixed(2);
-
-                let simRev = parseFloat(localStorage.getItem('simRevenue') || '0');
-                let simSpins = parseInt(localStorage.getItem('simSpins') || '0');
-                
-                document.getElementById('kpi-bars').innerText = "1 (Modo Simulação)";
-                document.getElementById('kpi-rounds').innerText = simSpins.toString();
-                document.getElementById('kpi-revenue').innerText = `R$ ${simRev.toFixed(2)}`;
-                document.getElementById('kpi-profit').innerText = `R$ ${(simRev * (simSettings.fee / 100)).toFixed(2)}`;
-
-                // Listener para atualizar automaticamente sem recarregar a página quando outra aba (o cliente) mudar o localStorage
-                window.addEventListener('storage', (e) => {
-                    if (window.isSimulationMode && (e.key === 'simRevenue' || e.key === 'simSpins')) {
-                        let r = parseFloat(localStorage.getItem('simRevenue') || '0');
-                        let s = parseInt(localStorage.getItem('simSpins') || '0');
-                        document.getElementById('kpi-rounds').innerText = s.toString();
-                        document.getElementById('kpi-revenue').innerText = `R$ ${r.toFixed(2)}`;
-                        document.getElementById('kpi-profit').innerText = `R$ ${(r * (simSettings.fee / 100)).toFixed(2)}`;
-                    }
-                });
-
-                const tbody = document.getElementById('table-bars');
-                tbody.innerHTML = `
-                    <tr class="border-b border-gray-700/50"><td class="py-4 font-bold">Bar Parceiro (Simulado)</td><td class="py-4">✅</td></tr>
-                `;
-
-                window.loadMasterData = () => {};
-                window.saveSettings = () => {
-                    const fee = parseFloat(document.getElementById('input-fee').value) || 0;
-                    const markup = parseFloat(document.getElementById('input-markup').value) || 0;
-                    localStorage.setItem('simSettings', JSON.stringify({ fee, markup }));
-                    alert("Configurações salvas no Modo Simulação!\nO Bar Parceiro agora usará esse Markup.");
-                    handleSimulationLogin(); // recarrega a tela
-                };
-            } catch (error) {
-                alert("Erro na simulação: " + error.message);
-                console.error(error);
-            }
-        }
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -76,9 +27,6 @@
                 
                 <button onclick="handleLogin()" class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-black py-3 rounded-lg hover:opacity-90">Entrar no Cofre</button>
                 <button onclick="handleSignUpMaster()" class="w-full text-xs text-gray-500 underline text-center block pt-2">Criar minha senha de dono (1º acesso)</button>
-                <div class="pt-4 border-t border-gray-700 mt-2">
-                    <button type="button" onclick="handleSimulationLogin()" class="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-3 rounded-lg transition">Modo Simulação (Teste Rápido)</button>
-                </div>
             </div>
         </div>
     </div>
@@ -148,7 +96,6 @@
                 supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
                 supabase.auth.onAuthStateChange((event, session) => {
-                    if (window.isSimulationMode) return;
                     if (session && session.user.email === 'appsolutions76@gmail.com') {
                         document.getElementById('auth-screen').classList.add('hidden');
                         document.getElementById('dashboard-screen').classList.remove('hidden');
@@ -187,7 +134,6 @@
         async function logout() { await supabase.auth.signOut(); }
 
         async function loadMasterData() {
-            if (window.isSimulationMode) return;
             const { data: settings } = await supabase.from('platform_settings').select('*').limit(1).single();
             if (settings) {
                 window.settingsId = settings.id;

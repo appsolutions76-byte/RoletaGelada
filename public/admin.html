@@ -5,157 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel do Bar - Roleta Gelada</title>
     <script>
-        // Declaramos variáveis globais de simulação cedo
+        // Declaramos variáveis globais cedo
         window.BAR_ID = null;
-        window.isSimulationMode = false;
 
-        function handleSimulationLogin() {
-            try {
-                window.isSimulationMode = true;
-                window.BAR_ID = 'simulacao-123';
-                document.getElementById('auth-screen').classList.add('hidden');
-                document.getElementById('dashboard-screen').classList.remove('hidden');
-                
-                document.getElementById('nav-bar-name').innerText = "Bar Parceiro (Modo Simulação)";
-                document.getElementById('mp-status').innerHTML = "✅ Conectado ao Mercado Pago (Simulado)";
-                document.getElementById('mp-status').className = "mb-4 font-semibold text-green-600";
-                document.getElementById('btn-connect-mp').classList.add('hidden');
-
-                let simSettings = JSON.parse(localStorage.getItem('simSettings')) || { markup: 1.50, fee: 5.00 };
-                window.MARKUP = simSettings.markup;
-                window.FEE = simSettings.fee / 100;
-
-                let simPrizes = JSON.parse(localStorage.getItem('simPrizes'));
-                if (!simPrizes) {
-                    simPrizes = [
-                        { id: 'sim-1', name: 'Heineken 600ml', bet_amount: 2.00, prize_cost: 15.00 },
-                        { id: 'sim-2', name: 'Porção de Fritas', bet_amount: 5.00, prize_cost: 25.00 }
-                    ];
-                    localStorage.setItem('simPrizes', JSON.stringify(simPrizes));
-                }
-
-                function loadFaturamento() {
-                    let simRev = parseFloat(localStorage.getItem('simRevenue') || '0');
-                    let simSpins = parseInt(localStorage.getItem('simSpins') || '0');
-                    const revEl = document.getElementById('kpi-bar-rev');
-                    if(revEl) revEl.innerText = `R$ ${simRev.toFixed(2)}`;
-                    
-                    let simConsolationFee = parseFloat(localStorage.getItem('simConsolationFee') || '0');
-                    let totalConsolation = simSpins * simConsolationFee;
-                    let platformFeeTotal = simRev * window.FEE;
-                    let netRev = simRev - platformFeeTotal - totalConsolation;
-
-                    document.getElementById('kpi-bar-net').innerText = `R$ ${netRev.toFixed(2)}`;
-                    const consEl = document.getElementById('kpi-bar-consolation');
-                    if(consEl) consEl.innerText = `R$ ${totalConsolation.toFixed(2)}`;
-                    document.getElementById('kpi-bar-spins').innerText = simSpins.toString();
-                }
-                loadFaturamento();
-
-                // Atualização em tempo real via aba lateral
-                window.addEventListener('storage', (e) => {
-                    if (window.isSimulationMode && (e.key === 'simRevenue' || e.key === 'simSpins')) {
-                        loadFaturamento();
-                    }
-                });
-
-                let simMinor = localStorage.getItem('simMinorPrizes') || "Amendoim, Shot de Cachaça, IHHH, GIRE +1, NADA";
-                document.getElementById('minor-prizes-input').value = simMinor;
-
-                let simThemeColor = localStorage.getItem('simThemeColor') || "#38bdf8";
-                let simThemeBg = localStorage.getItem('simThemeBg') || "";
-                let simThemeLogo = localStorage.getItem('simThemeLogo') || "";
-                document.getElementById('theme-color-input').value = simThemeColor;
-                document.getElementById('theme-bg-input').value = simThemeBg;
-                document.getElementById('theme-logo-input').value = simThemeLogo;
-
-                window.saveThemeSettings = () => {
-                    localStorage.setItem('simThemeColor', document.getElementById('theme-color-input').value);
-                    localStorage.setItem('simThemeBg', document.getElementById('theme-bg-input').value);
-                    localStorage.setItem('simThemeLogo', document.getElementById('theme-logo-input').value);
-                    const msg = document.getElementById('theme-msg');
-                    msg.innerText = "Tema salvo na simulação!";
-                    msg.className = "text-green-400 text-sm mt-2 font-bold";
-                    msg.classList.remove('hidden');
-                    setTimeout(() => msg.classList.add('hidden'), 5000);
-                };
-
-                function renderSimPrizes() {
-                    const tbody = document.getElementById('table-prizes');
-                    tbody.innerHTML = '';
-                    simPrizes.forEach(p => {
-                        const safeName = p.name.replace(/'/g, "\\'").replace(/"/g, "&quot;");
-                        tbody.innerHTML += `
-                            <tr class="border-b border-gray-700/50 hover:bg-white/5 transition">
-                                <td class="p-3 font-semibold text-white">${p.name}</td>
-                                <td class="p-3 text-cyan-400 font-bold">R$ ${p.bet_amount.toFixed(2)}</td>
-                                <td class="p-3 text-gray-400">R$ ${p.prize_cost.toFixed(2)}</td>
-                                <td class="p-3 text-right">
-                                    <button onclick="openEditModal('${p.id}', '${safeName}', ${p.prize_cost}, ${p.bet_amount})" class="text-blue-400 hover:text-blue-300 text-xs uppercase font-bold underline transition mr-2">Editar</button>
-                                    <button onclick="deleteSimPrize('${p.id}')" class="text-red-400 hover:text-red-300 text-xs uppercase font-bold underline transition">Excluir</button>
-                                </td>
-                            </tr>
-                        `;
-                    });
-                }
-
-                window.deleteSimPrize = (id) => {
-                    simPrizes = simPrizes.filter(p => p.id !== id);
-                    localStorage.setItem('simPrizes', JSON.stringify(simPrizes));
-                    renderSimPrizes();
-                };
-
-                renderSimPrizes();
-
-                // Sobrescrevendo funções globais para simulação
-                window.loadDashboard = () => {};
-                window.savePrize = () => {
-                    const name = document.getElementById('prize-name').value;
-                    const cost = parseFloat(document.getElementById('prize-cost').value) || 0;
-                    const bet = parseFloat(document.getElementById('prize-bet').value) || 0;
-                    if(!name) return alert("Digite um nome!");
-                    
-                    simPrizes.push({ id: 'sim-' + Date.now(), name, bet_amount: bet, prize_cost: cost });
-                    localStorage.setItem('simPrizes', JSON.stringify(simPrizes));
-                    renderSimPrizes();
-                    
-                    document.getElementById('modal-prize').classList.add('hidden');
-                };
-
-                window.saveMinorPrizes = () => {
-                    localStorage.setItem('simMinorPrizes', document.getElementById('minor-prizes-input').value);
-                    localStorage.setItem('simConsolationFee', document.getElementById('consolation-fee-input').value);
-                    const msg = document.getElementById('minor-prizes-msg');
-                    msg.innerText = "Configurações de Consolação salvas na simulação!";
-                    msg.className = "text-green-400 text-sm mt-2 font-bold";
-                    msg.classList.remove('hidden');
-                    setTimeout(() => msg.classList.add('hidden'), 5000);
-                };
-
-                window.updatePrize = async () => {
-                    const id = document.getElementById('edit-prize-id').value;
-                    const name = document.getElementById('edit-prize-name').value;
-                    const cost = parseFloat(document.getElementById('edit-prize-cost').value) || 0;
-                    const bet = parseFloat(document.getElementById('edit-prize-bet').value) || 0;
-                    if(!name) return alert("Digite um nome!");
-                    
-                    const idx = simPrizes.findIndex(p => p.id === id);
-                    if (idx > -1) {
-                        simPrizes[idx] = { ...simPrizes[idx], name, prize_cost: cost, bet_amount: bet };
-                        localStorage.setItem('simPrizes', JSON.stringify(simPrizes));
-                        renderSimPrizes();
-                    }
-                    document.getElementById('modal-edit-prize').classList.add('hidden');
-                };
-
-                window.copyAppUrl = () => {
-                    const appUrl = `${window.location.origin}/index.html?bar=${window.BAR_ID}`;
-                    prompt("Link do App Cliente gerado com sucesso!\n\nCopie o link abaixo e cole em uma nova aba para testar:", appUrl);
-                };
-            } catch (error) {
-                alert("Erro na simulação: " + error.message);
-                console.error(error);
-            }
+        function copyAppUrl() {
+            if (!window.BAR_ID) return alert("Erro: Bar ID não encontrado. Faça login novamente.");
+            const appUrl = `${window.location.origin}/index.html?bar=${window.BAR_ID}`;
+            prompt("Link Oficial do seu Bar gerado com sucesso!\n\nCopie o link abaixo para abrir no celular e rodar o aplicativo:", appUrl);
         }
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -364,7 +220,6 @@
                 
                 // -- Autenticação --
                 supabase.auth.onAuthStateChange((event, session) => {
-                    if (window.isSimulationMode) return;
                     if (session) {
                         window.BAR_ID = session.user.id;
                         document.getElementById('auth-screen').classList.add('hidden');
@@ -412,7 +267,6 @@
         // -- Dashboard --
         async function loadDashboard() {
             try {
-                if (window.isSimulationMode) return;
                 const { data: bar, error: barError } = await supabase.from('bars').select('*').eq('id', window.BAR_ID).single();
                 if(barError) throw new Error("Falha ao ler tabela bars: " + barError.message);
                 if(!bar) return;
@@ -518,8 +372,6 @@
         }
 
         async function saveThemeSettings() {
-            if (window.isSimulationMode) return window.saveThemeSettings();
-            
             const tColor = document.getElementById('theme-color-input').value;
             const tBg = document.getElementById('theme-bg-input').value;
             const tLogo = document.getElementById('theme-logo-input').value;
@@ -538,7 +390,6 @@
         }
 
         async function saveMPToken() {
-            if (window.isSimulationMode) return;
             const token = document.getElementById('mp-token-input').value;
             if (!token) return alert('Digite um token válido!');
             
