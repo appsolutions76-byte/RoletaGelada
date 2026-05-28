@@ -35,14 +35,19 @@ serve(async (req) => {
         const { bar_id } = payload;
         if (!bar_id) throw new Error("bar_id is required");
         
-        // Proteção extra: Master não pode se deletar
-        if (bar_id === user.id) throw new Error("Cannot delete Master account");
-
-        // Deleta o usuário da tabela auth.users
-        // Devido ao ON DELETE CASCADE configurado no BD, a conta na tabela 'bars', os prêmios e as rodadas serão deletados automaticamente.
-        const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(bar_id);
-        
-        if (deleteError) throw deleteError;
+        if (bar_id === user.id) {
+            // É a conta Master (acabou na tabela de bars por acidente). Apenas deleta de bars, NÃO do auth!
+            const { error: barError } = await supabaseAdmin.from('bars').delete().eq('id', bar_id);
+            if (barError) throw barError;
+        } else {
+            // Deleta o usuário da tabela auth.users (causa cascade delete na tabela bars)
+            const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(bar_id);
+            if (deleteError) {
+                // Se falhar (ex: user não existe no auth.users), força a deleção na tabela bars
+                const { error: barError } = await supabaseAdmin.from('bars').delete().eq('id', bar_id);
+                if (barError) throw deleteError;
+            }
+        }
 
         return new Response(JSON.stringify({ success: true, message: 'Parceiro excluído com sucesso.' }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
