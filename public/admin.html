@@ -511,21 +511,33 @@
         // ==========================================
         // SISTEMA ANTI-FRAUDE (SCANNER DE PRÊMIOS)
         // ==========================================
-        let html5QrcodeScanner = null;
+        let html5QrCode = null;
 
-        function startScanner() {
+        async function startScanner() {
             document.getElementById('btn-start-scanner').classList.add('hidden');
             document.getElementById('scanner-box').classList.remove('hidden');
             
-            if(!html5QrcodeScanner) {
-                html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: {width: 250, height: 250} }, /* verbose= */ false);
+            try {
+                if(!html5QrCode) {
+                    html5QrCode = new Html5Qrcode("reader");
+                }
+                await html5QrCode.start(
+                  { facingMode: "environment" }, 
+                  { fps: 10, qrbox: { width: 250, height: 250 } },
+                  onScanSuccess,
+                  onScanFailure
+                );
+            } catch (err) {
+                alert("Erro ao abrir câmera: " + err.message + "\n\nDICA: 1. Permita o uso da câmera quando solicitado.\n2. Não abra dentro do Instagram/WhatsApp, copie o link e cole no Google Chrome ou Safari.");
+                stopScanner();
             }
-            html5QrcodeScanner.render(onScanSuccess, onScanFailure);
         }
 
         function stopScanner() {
-            if(html5QrcodeScanner) {
-                html5QrcodeScanner.clear().catch(error => { console.error("Failed to clear html5QrcodeScanner. ", error); });
+            if(html5QrCode && html5QrCode.isScanning) {
+                html5QrCode.stop().then(() => {
+                    html5QrCode.clear();
+                }).catch(err => console.error("Failed to stop scanner", err));
             }
             document.getElementById('btn-start-scanner').classList.remove('hidden');
             document.getElementById('scanner-box').classList.add('hidden');
