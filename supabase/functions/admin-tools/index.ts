@@ -54,7 +54,7 @@ serve(async (req) => {
         })
     } 
     else if (action === 'reset_all_stats') {
-        // Zera rodadas e cofres, mas mantém os bares e prêmios configurados
+        // Zera todas as rodadas e o cofre, preparando o sistema para um novo ciclo limpo
         const { error: roundError } = await supabaseAdmin.from('rounds').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         if (roundError) throw roundError;
 
