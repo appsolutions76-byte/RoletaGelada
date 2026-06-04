@@ -361,8 +361,8 @@
                 }
 
                 const { data: settings } = await supabaseClient.from('platform_settings').select('markup_multiplier, platform_fee_percentage').limit(1).maybeSingle();
-                window.MARKUP = settings?.markup_multiplier || 1.5;
-                window.FEE = settings?.platform_fee_percentage || 0.05;
+                window.MARKUP = settings?.markup_multiplier ?? 1.5;
+                window.FEE = settings?.platform_fee_percentage ?? 0.05;
 
                 const { data: rounds, error: roundsError } = await supabaseClient.from('rounds').select('bet_amount, status').eq('bar_id', window.BAR_ID);
                 if (roundsError) throw new Error("Erro na tabela rounds: " + roundsError.message);
