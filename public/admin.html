@@ -322,7 +322,7 @@
                 const { data: bar, error: barError } = await supabaseClient.from('bars').select('*').eq('id', window.BAR_ID).maybeSingle();
                 if(barError) throw new Error("Falha ao ler tabela bars: " + barError.message);
                 if(!bar) {
-                    alert("⚠️ ERRO GRAVE: Sua conta de Bar não foi encontrada no banco de dados. Isso pode acontecer se o cadastro falhou. Clique em Sair e tente criar a conta novamente.");
+                    alert("⚠️ ERRO GRAVE: Sua conta de Bar não foi encontrada no banco de dados. \nID Buscado: " + window.BAR_ID + "\nClique em Sair e tente logar novamente.");
                     return;
                 }
 
