@@ -78,7 +78,7 @@ serve(async (req) => {
         return new Response(JSON.stringify({ prize: round.prizes.name, status: 'WON' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }})
       } else {
         await supabaseClient.from('rounds').update({ status: 'completed', result: 'LOST' }).eq('id', round.id);
-        return new Response(JSON.stringify({ prize: 'NADA', status: 'LOST' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }})
+        return new Response(JSON.stringify({ prize: 'NADA', status: 'LOST', debug_cb: currentBalance, debug_tb: targetBalance, debug_vault: vault }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }})
       }
     }
     
