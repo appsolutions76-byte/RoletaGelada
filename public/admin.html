@@ -319,9 +319,12 @@
             try {
                 if (!window.BAR_ID) return;
                 
-                const { data: bar, error: barError } = await supabaseClient.from('bars').select('*').eq('id', window.BAR_ID).single();
+                const { data: bar, error: barError } = await supabaseClient.from('bars').select('*').eq('id', window.BAR_ID).maybeSingle();
                 if(barError) throw new Error("Falha ao ler tabela bars: " + barError.message);
-                if(!bar) return;
+                if(!bar) {
+                    alert("⚠️ ERRO GRAVE: Sua conta de Bar não foi encontrada no banco de dados. Isso pode acontecer se o cadastro falhou. Clique em Sair e tente criar a conta novamente.");
+                    return;
+                }
 
                 document.getElementById('nav-bar-name').innerText = bar.name;
                 
@@ -357,7 +360,7 @@
                     });
                 }
 
-                const { data: settings } = await supabaseClient.from('platform_settings').select('markup_multiplier, platform_fee_percentage').limit(1).single();
+                const { data: settings } = await supabaseClient.from('platform_settings').select('markup_multiplier, platform_fee_percentage').limit(1).maybeSingle();
                 window.MARKUP = settings?.markup_multiplier || 1.5;
                 window.FEE = settings?.platform_fee_percentage || 0.05;
 
