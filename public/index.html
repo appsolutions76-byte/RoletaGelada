@@ -69,7 +69,6 @@
         .roleta-wheel {
             width: 100%; height: 100%; border-radius: 50%; border: 5px solid #FFD700;
             background: conic-gradient(#111 0% 16.6%, #FFD700 16.6% 33.3%, #111 33.3% 50%, #FFD700 50% 66.6%, #111 66.6% 83.3%, #FFD700 83.3% 100%);
-            transition: transform 4s cubic-bezier(0.1, 0.7, 0.1, 1);
             display: flex; align-items: center; justify-content: center;
         }
         .roleta-text-center { font-weight: bold; font-size: 14px; color: #FFF; text-align: center; width: 90%; line-height: 1.2; z-index: 20; }
@@ -156,7 +155,7 @@
         const BAR_ID = params.get('bar');
 
         let state = { prizeId: null, prizeName: null, roundId: null, prizeBet: 0, finalMinorPrize: null, sliceMap: {} };
-        let spinState = { isSpinning: false, currentRotation: 0, speed: 5, animFrame: null, timer: 10, timerInterval: null };
+        let spinState = { isSpinning: false, currentRotation: 0, speed: 5, animFrame: null, timer: 10, timerInterval: null, direction: 1 };
 
         async function sfetch(endpoint, method = 'GET', body = null) {
             const options = {
@@ -352,6 +351,7 @@
                 // easy = lento e fácil (3 graus por frame = ~3s por volta)
                 // hard = rápido e difícil (30 graus por frame = ~0.2s por volta, muito difícil acertar)
                 spinState.speed = (res.difficulty === 'easy') ? 3 : 28; 
+                spinState.direction = Math.random() > 0.5 ? 1 : -1; // Alterna sentido horário e anti-horário
                 
                 spinState.timer = 10;
                 btn.innerText = `PARAR (${spinState.timer}s)`;
@@ -389,7 +389,7 @@
         function animateSpin() {
             if (!spinState.isSpinning) return;
             
-            spinState.currentRotation = (spinState.currentRotation + spinState.speed) % 360;
+            spinState.currentRotation += (spinState.speed * spinState.direction);
             document.getElementById('wheel').style.transform = `rotate(${spinState.currentRotation}deg)`;
             
             // Efeito sonoro rudimentar baseado na velocidade
@@ -462,7 +462,8 @@
             btn.innerText = "Processando...";
             btn.style.backgroundColor = '';
             
-            const stoppedAngle = spinState.currentRotation;
+            let stoppedAngle = spinState.currentRotation % 360;
+            if (stoppedAngle < 0) stoppedAngle += 360;
 
             try {
                 const data = await sfetch(`/functions/v1/spin-roulette`, 'POST', { round_id: state.roundId, action: 'stop', angle: stoppedAngle });

@@ -57,7 +57,9 @@ serve(async (req) => {
       // A fatia GANHOU (90deg) está no topo quando a roleta gira 270deg. 
       // Com largura de 60deg, os limites são 240 a 300.
       if (angle !== undefined) {
-        const normalizedAngle = angle % 360;
+        let normalizedAngle = angle % 360;
+        if (normalizedAngle < 0) normalizedAngle += 360;
+
         if (normalizedAngle >= 240 && normalizedAngle <= 300) {
           won = true;
         }
