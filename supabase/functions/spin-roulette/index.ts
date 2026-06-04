@@ -55,12 +55,9 @@ serve(async (req) => {
       
       // Ignora o ângulo do frontend para proteção total do caixa (Slip Mechanic / Skill Stop Illusion)
       if (currentBalance >= targetBalance) {
-        // O Cofre atingiu a meta (Markup Multiplicador). 
-        // A partir de agora, a roleta joga com sua probabilidade natural (1 fatia ganhadora em 6 = 16.66%).
-        const chance = Math.random();
-        if (chance <= 0.1666) { 
-          won = true;
-        }
+        // O Cofre atingiu a meta (Markup Multiplicador configurado no Master). 
+        // Libera o prêmio IMEDIATAMENTE (100% de chance) no exato momento que o usuário clicar em "Parar".
+        won = true;
       }
 
       if (won) {
