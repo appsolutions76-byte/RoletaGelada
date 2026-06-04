@@ -348,9 +348,9 @@
                 const res = await sfetch(`/functions/v1/spin-roulette`, 'POST', { round_id: state.roundId, action: 'start' });
                 
                 // Define a velocidade (graus por frame a 60fps)
-                // easy = lento e fácil (3 graus por frame = ~3s por volta)
-                // hard = rápido e difícil (30 graus por frame = ~0.2s por volta, muito difícil acertar)
-                spinState.speed = (res.difficulty === 'easy') ? 3 : 28; 
+                // easy = lucro já garantido (> 1.5x), velocidade mais justa (6 graus por frame = ~1 volta por segundo)
+                // hard = protegendo lucro, velocidade absurda e muito difícil (45 graus por frame = ~0.13s por volta, borrão visual)
+                spinState.speed = (res.difficulty === 'easy') ? 6 : 45; 
                 spinState.direction = Math.random() > 0.5 ? 1 : -1; // Alterna sentido horário e anti-horário
                 
                 spinState.timer = 10;
