@@ -53,14 +53,10 @@ serve(async (req) => {
     if (action === 'stop') {
       let won = false;
       
-      // Validação do ângulo
-      // A fatia GANHOU (90deg) está no topo quando a roleta gira 270deg. 
-      // Com largura de 60deg, os limites são 240 a 300.
-      if (angle !== undefined) {
-        let normalizedAngle = angle % 360;
-        if (normalizedAngle < 0) normalizedAngle += 360;
-
-        if (normalizedAngle >= 240 && normalizedAngle <= 300) {
+      // Ignora o ângulo do frontend para proteção total do caixa (Slip Mechanic / Skill Stop Illusion)
+      if (currentBalance >= targetBalance) {
+        const chance = Math.random();
+        if (chance <= 0.15) { // 15% de chance de ganhar quando a trava libera
           won = true;
         }
       }
