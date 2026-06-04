@@ -55,10 +55,9 @@ serve(async (req) => {
       
       // Ignora o ângulo do frontend para proteção total do caixa (Slip Mechanic / Skill Stop Illusion)
       if (currentBalance >= targetBalance) {
-        const chance = Math.random();
-        if (chance <= 0.15) { // 15% de chance de ganhar quando a trava libera
-          won = true;
-        }
+        // Como o saldo já atingiu o limite configurado (custo * multiplicador), 
+        // libera o prêmio imediatamente para garantir exatamente a margem estipulada pelo bar.
+        won = true;
       }
 
       if (won) {
