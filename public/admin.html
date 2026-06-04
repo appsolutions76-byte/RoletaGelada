@@ -392,12 +392,23 @@
             if(consEl) consEl.innerText = `R$ ${totalConsolation.toFixed(2)}`;
             document.getElementById('kpi-bar-spins').innerText = totalSpins;
 
-            // Realtime Sync para produção
+            // Realtime Sync para produção (Filtro no client-side para evitar falhas de Replica Identity)
             if (!window.realtimeSubscribed) {
                 window.realtimeSubscribed = true;
-                supabaseClient.channel('admin-rounds').on('postgres_changes', { event: '*', schema: 'public', table: 'rounds', filter: `bar_id=eq.${window.BAR_ID}` }, () => {
-                    loadDashboard();
+                supabaseClient.channel('admin-rounds').on('postgres_changes', { event: '*', schema: 'public', table: 'rounds' }, (payload) => {
+                    if (payload.new && payload.new.bar_id === window.BAR_ID) {
+                        loadDashboard();
+                    } else if (payload.old && payload.old.bar_id === window.BAR_ID) {
+                        loadDashboard();
+                    } else if (!payload.new && !payload.old) {
+                        loadDashboard(); // Fallback se o payload vier vazio
+                    }
                 }).subscribe();
+
+                // Fallback Polling: Atualiza a cada 10 segundos para garantir que o painel nunca fique congelado
+                setInterval(() => {
+                    loadDashboard();
+                }, 10000);
             }
             } catch (err) {
                 console.error("Erro Crítico no loadDashboard:", err);
