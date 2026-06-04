@@ -317,101 +317,88 @@
         // -- Dashboard --
         async function loadDashboard() {
             try {
+                if (!window.BAR_ID) return;
+                
                 const { data: bar, error: barError } = await supabaseClient.from('bars').select('*').eq('id', window.BAR_ID).single();
                 if(barError) throw new Error("Falha ao ler tabela bars: " + barError.message);
                 if(!bar) return;
 
-            document.getElementById('nav-bar-name').innerText = bar.name;
-            
-            // Tenta carregar os minor prizes e consolation fee (se as colunas existirem)
-            if (bar.minor_prizes !== undefined && bar.minor_prizes !== null) {
-                document.getElementById('minor-prizes-input').value = bar.minor_prizes;
-            }
-            if (bar.consolation_fee !== undefined && bar.consolation_fee !== null) {
-                document.getElementById('consolation-fee-input').value = bar.consolation_fee;
-            }
-            
-            // Carrega as configurações de tema
-            if (bar.theme_color) document.getElementById('theme-color-input').value = bar.theme_color;
-            if (bar.theme_background) document.getElementById('theme-bg-input').value = bar.theme_background;
-            if (bar.theme_logo_url) document.getElementById('theme-logo-input').value = bar.theme_logo_url;
+                document.getElementById('nav-bar-name').innerText = bar.name;
+                
+                if (bar.minor_prizes !== undefined && bar.minor_prizes !== null) document.getElementById('minor-prizes-input').value = bar.minor_prizes;
+                if (bar.consolation_fee !== undefined && bar.consolation_fee !== null) document.getElementById('consolation-fee-input').value = bar.consolation_fee;
+                if (bar.theme_color) document.getElementById('theme-color-input').value = bar.theme_color;
+                if (bar.theme_background) document.getElementById('theme-bg-input').value = bar.theme_background;
+                if (bar.theme_logo_url) document.getElementById('theme-logo-input').value = bar.theme_logo_url;
 
-            if (bar.mp_access_token) {
-                document.getElementById('mp-status').innerHTML = "✅ Conectado ao Mercado Pago";
-                document.getElementById('mp-status').className = "mb-4 font-semibold text-green-600";
-                document.getElementById('mp-token-input').value = bar.mp_access_token;
-            }
+                if (bar.mp_access_token) {
+                    document.getElementById('mp-status').innerHTML = "✅ Conectado ao Mercado Pago";
+                    document.getElementById('mp-status').className = "mb-4 font-semibold text-green-600";
+                    document.getElementById('mp-token-input').value = bar.mp_access_token;
+                }
 
-            const { data: prizes } = await supabaseClient.from('prizes').select('*').eq('bar_id', window.BAR_ID);
-            const tbody = document.getElementById('table-prizes');
-            tbody.innerHTML = '';
-            prizes.forEach(p => {
-                const safeName = p.name.replace(/'/g, "\\'").replace(/"/g, "&quot;");
-                tbody.innerHTML += `
-                    <tr class="border-b border-gray-700/50 hover:bg-white/5 transition">
-                        <td class="p-3 font-semibold text-white">${p.name}</td>
-                        <td class="p-3 text-cyan-400 font-bold">R$ ${p.bet_amount}</td>
-                        <td class="p-3 text-gray-400">R$ ${p.prize_cost}</td>
-                        <td class="p-3 text-right">
-                            <button onclick="openEditModal('${p.id}', '${safeName}', ${p.prize_cost}, ${p.bet_amount})" class="text-blue-400 hover:text-blue-300 text-xs uppercase font-bold underline transition mr-2">Editar</button>
-                            <button onclick="deletePrize('${p.id}')" class="text-red-400 hover:text-red-300 text-xs uppercase font-bold underline transition">Excluir</button>
-                        </td>
-                    </tr>
-                `;
-            });
+                const { data: prizes } = await supabaseClient.from('prizes').select('*').eq('bar_id', window.BAR_ID);
+                const tbody = document.getElementById('table-prizes');
+                tbody.innerHTML = '';
+                if (prizes) {
+                    prizes.forEach(p => {
+                        const safeName = p.name.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+                        tbody.innerHTML += `
+                            <tr class="border-b border-gray-700/50 hover:bg-white/5 transition">
+                                <td class="p-3 font-semibold text-white">${p.name}</td>
+                                <td class="p-3 text-cyan-400 font-bold">R$ ${p.bet_amount}</td>
+                                <td class="p-3 text-gray-400">R$ ${p.prize_cost}</td>
+                                <td class="p-3 text-right">
+                                    <button onclick="openEditModal('${p.id}', '${safeName}', ${p.prize_cost}, ${p.bet_amount})" class="text-blue-400 hover:text-blue-300 text-xs uppercase font-bold underline transition mr-2">Editar</button>
+                                    <button onclick="deletePrize('${p.id}')" class="text-red-400 hover:text-red-300 text-xs uppercase font-bold underline transition">Excluir</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
 
-            // Pega as configurações da plataforma para calcular o líquido
-            const { data: settings } = await supabaseClient.from('platform_settings').select('markup_multiplier, platform_fee_percentage').limit(1).single();
-            if (settings) {
-                window.MARKUP = settings.markup_multiplier;
-                window.FEE = settings.platform_fee_percentage;
-            } else {
-                window.FEE = 0.05;
-            }
+                const { data: settings } = await supabaseClient.from('platform_settings').select('markup_multiplier, platform_fee_percentage').limit(1).single();
+                window.MARKUP = settings?.markup_multiplier || 1.5;
+                window.FEE = settings?.platform_fee_percentage || 0.05;
 
-            // Carrega faturamento real
-            const { data: rounds, error: roundsError } = await supabaseClient.from('rounds').select('bet_amount, status').eq('bar_id', window.BAR_ID);
-            if (roundsError) {
-                alert("⚠️ AVISO: Erro ao carregar as rodadas. Você executou a migration 04 no banco de dados? Erro: " + roundsError.message);
-                throw new Error("Erro na tabela rounds: " + roundsError.message);
-            }
+                const { data: rounds, error: roundsError } = await supabaseClient.from('rounds').select('bet_amount, status').eq('bar_id', window.BAR_ID);
+                if (roundsError) throw new Error("Erro na tabela rounds: " + roundsError.message);
 
-            const paid = rounds ? rounds.filter(r => ['paid','spinning','completed'].includes(r.status)) : [];
-            const rev = paid.reduce((acc, curr) => acc + Number(curr.bet_amount), 0);
-            const totalSpins = paid.length;
-            const revEl = document.getElementById('kpi-bar-rev');
-            if(revEl) revEl.innerText = `R$ ${rev.toFixed(2)}`;
+                const paid = rounds ? rounds.filter(r => ['paid','spinning','completed'].includes(r.status)) : [];
+                const rev = paid.reduce((acc, curr) => acc + Number(curr.bet_amount), 0);
+                const totalSpins = paid.length;
+                
+                const consolationFee = parseFloat(bar.consolation_fee) || 0;
+                const totalConsolation = totalSpins * consolationFee;
+                const platformFeeTotal = rev * window.FEE;
+                const netRev = rev - platformFeeTotal - totalConsolation;
 
-            const consolationFee = parseFloat(bar.consolation_fee) || 0;
-            const totalConsolation = totalSpins * consolationFee;
-            const platformFeeTotal = rev * window.FEE;
-            const netRev = rev - platformFeeTotal - totalConsolation;
+                document.getElementById('kpi-bar-net').innerText = `R$ ${netRev.toFixed(2)}`;
+                const consEl = document.getElementById('kpi-bar-consolation');
+                if(consEl) consEl.innerText = `R$ ${totalConsolation.toFixed(2)}`;
+                document.getElementById('kpi-bar-spins').innerText = totalSpins;
 
-            document.getElementById('kpi-bar-net').innerText = `R$ ${netRev.toFixed(2)}`;
-            const consEl = document.getElementById('kpi-bar-consolation');
-            if(consEl) consEl.innerText = `R$ ${totalConsolation.toFixed(2)}`;
-            document.getElementById('kpi-bar-spins').innerText = totalSpins;
+                // Realtime Sync para produção (Filtro no client-side para evitar falhas de Replica Identity)
+                if (!window.realtimeSubscribed) {
+                    window.realtimeSubscribed = true;
+                    supabaseClient.channel('admin-rounds').on('postgres_changes', { event: '*', schema: 'public', table: 'rounds' }, (payload) => {
+                        if (payload.new && payload.new.bar_id === window.BAR_ID) {
+                            loadDashboard();
+                        } else if (payload.old && payload.old.bar_id === window.BAR_ID) {
+                            loadDashboard();
+                        } else if (!payload.new && !payload.old) {
+                            loadDashboard(); // Fallback se o payload vier vazio
+                        }
+                    }).subscribe();
 
-            // Realtime Sync para produção (Filtro no client-side para evitar falhas de Replica Identity)
-            if (!window.realtimeSubscribed) {
-                window.realtimeSubscribed = true;
-                supabaseClient.channel('admin-rounds').on('postgres_changes', { event: '*', schema: 'public', table: 'rounds' }, (payload) => {
-                    if (payload.new && payload.new.bar_id === window.BAR_ID) {
+                    // Fallback Polling: Atualiza a cada 10 segundos para garantir que o painel nunca fique congelado
+                    setInterval(() => {
                         loadDashboard();
-                    } else if (payload.old && payload.old.bar_id === window.BAR_ID) {
-                        loadDashboard();
-                    } else if (!payload.new && !payload.old) {
-                        loadDashboard(); // Fallback se o payload vier vazio
-                    }
-                }).subscribe();
-
-                // Fallback Polling: Atualiza a cada 10 segundos para garantir que o painel nunca fique congelado
-                setInterval(() => {
-                    loadDashboard();
-                }, 10000);
-            }
+                    }, 10000);
+                }
             } catch (err) {
                 console.error("Erro Crítico no loadDashboard:", err);
+                alert("Ocorreu um erro ao carregar o painel. Se isso persistir, recarregue a página. Erro: " + err.message);
             }
         }
 
