@@ -135,7 +135,7 @@
                     </div>
                 </div>
             </div>
-            <button class="btn-blue" id="btn-girar" onclick="spinRoulette()" disabled>Sorteando...</button>
+            <button class="btn-blue" id="btn-girar" onclick="beginSpin()" disabled>GIRAR A ROLETA</button>
         </div>
 
         <!-- Etapa 4: Resultado -->
@@ -156,6 +156,7 @@
         const BAR_ID = params.get('bar');
 
         let state = { prizeId: null, prizeName: null, roundId: null, prizeBet: 0, finalMinorPrize: null, sliceMap: {} };
+        let spinState = { isSpinning: false, currentRotation: 0, speed: 5, animFrame: null };
 
         async function sfetch(endpoint, method = 'GET', body = null) {
             const options = {
@@ -334,152 +335,177 @@
 
             const btnGirar = document.getElementById('btn-girar');
             btnGirar.disabled = false;
-            btnGirar.innerText = "GIRAR A ROLETA";
+            btnGirar.innerText = "INICIAR";
+            btnGirar.onclick = beginSpin;
         }
 
-        async function spinRoulette() {
+        async function beginSpin() {
             const btn = document.getElementById('btn-girar');
             btn.disabled = true;
-            btn.innerText = "Sorteando...";
+            btn.innerText = "Preparando...";
 
             try {
-                const data = await sfetch(`/functions/v1/spin-roulette`, 'POST', { round_id: state.roundId });
-                let prizeResult = data.prize;
+                // Obter dificuldade do backend
+                const res = await sfetch(`/functions/v1/spin-roulette`, 'POST', { round_id: state.roundId, action: 'start' });
                 
-                let finalRotation = 0;
-                if (prizeResult === 'NADA' || prizeResult === 'GIRE +1') {
-                    // Perdeu: Para em qualquer fatia que não seja a de 90 graus (GANHOU)
-                    // Fatias de perda: 30deg (NADA), 150deg (QUASE), 210deg (NADA), 270deg (IHHH), 330deg (QUASE)
-                    // Para alinhar 30deg no topo, roda 330. Para 150deg, roda 210, etc.
-                    const losingRotations = [330, 210, 150, 90, 30]; 
-                    const targetRotation = losingRotations[Math.floor(Math.random() * losingRotations.length)];
-                    state.finalMinorPrize = state.sliceMap[targetRotation];
-                    finalRotation = 360 * 10 + targetRotation + Math.floor(Math.random() * 40 - 20); // offset para não parar perfeitamente no meio
-                } else {
-                    // Ganhou: Para na fatia de 90 graus (GANHOU!)
-                    // Para alinhar 90deg no topo, roda 270.
-                    finalRotation = 360 * 10 + 270 + Math.floor(Math.random() * 40 - 20);
-                }
+                // Define a velocidade (graus por frame a 60fps)
+                // easy = lento e fácil (3 graus por frame = ~3s por volta)
+                // hard = rápido e difícil (30 graus por frame = ~0.2s por volta, muito difícil acertar)
+                spinState.speed = (res.difficulty === 'easy') ? 3 : 28; 
                 
-                // Animação CSS 
-                const wheel = document.getElementById('wheel');
-                wheel.style.transform = `rotate(${finalRotation}deg)`;
+                btn.innerText = "PARAR";
+                btn.style.backgroundColor = '#ef4444'; // Vermelho para chamar a atenção
+                btn.disabled = false;
+                btn.onclick = stopSpin;
+
+                spinState.isSpinning = true;
                 
-                // Efeitos Sonoros e Vibração
                 if (!window.audioCtx) {
                     window.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 }
                 if (window.audioCtx.state === 'suspended') window.audioCtx.resume();
                 
-                function playTick() {
-                    if (!window.audioCtx) return;
+                animateSpin();
+
+            } catch (e) {
+                alert("Erro ao iniciar roleta: " + e.message);
+                btn.disabled = false;
+                btn.innerText = "INICIAR";
+            }
+        }
+
+        let lastAudioTime = 0;
+        function animateSpin() {
+            if (!spinState.isSpinning) return;
+            
+            spinState.currentRotation = (spinState.currentRotation + spinState.speed) % 360;
+            document.getElementById('wheel').style.transform = `rotate(${spinState.currentRotation}deg)`;
+            
+            // Efeito sonoro rudimentar baseado na velocidade
+            const now = Date.now();
+            const tickRate = (spinState.speed > 10) ? 50 : 150;
+            if (now - lastAudioTime > tickRate) {
+                lastAudioTime = now;
+                if (window.audioCtx) {
                     const osc = window.audioCtx.createOscillator();
                     const gainNode = window.audioCtx.createGain();
                     osc.type = 'triangle';
                     osc.frequency.setValueAtTime(800, window.audioCtx.currentTime);
                     osc.frequency.exponentialRampToValueAtTime(100, window.audioCtx.currentTime + 0.05);
-                    gainNode.gain.setValueAtTime(0.5, window.audioCtx.currentTime);
+                    gainNode.gain.setValueAtTime(0.1, window.audioCtx.currentTime);
                     gainNode.gain.exponentialRampToValueAtTime(0.01, window.audioCtx.currentTime + 0.05);
                     osc.connect(gainNode);
                     gainNode.connect(window.audioCtx.destination);
                     osc.start();
                     osc.stop(window.audioCtx.currentTime + 0.05);
                 }
+            }
 
-                let elapsed = 0;
-                const totalDuration = 4000;
-                const startInterval = 50;
-                const endInterval = 400;
+            spinState.animFrame = requestAnimationFrame(animateSpin);
+        }
+
+        function getMinorPrizeFromAngle(angle) {
+            if (angle >= 0 && angle < 60) return state.sliceMap[30];
+            if (angle >= 60 && angle < 120) return state.sliceMap[90];
+            if (angle >= 120 && angle < 180) return state.sliceMap[150];
+            if (angle >= 180 && angle < 240) return state.sliceMap[210];
+            if (angle >= 300 && angle <= 360) return state.sliceMap[330];
+            return "NADA"; 
+        }
+
+        async function stopSpin() {
+            spinState.isSpinning = false;
+            cancelAnimationFrame(spinState.animFrame);
+            
+            const btn = document.getElementById('btn-girar');
+            btn.disabled = true;
+            btn.innerText = "Processando...";
+            btn.style.backgroundColor = '';
+            
+            const stoppedAngle = spinState.currentRotation;
+
+            try {
+                const data = await sfetch(`/functions/v1/spin-roulette`, 'POST', { round_id: state.roundId, action: 'stop', angle: stoppedAngle });
                 
-                function nextTick() {
-                    playTick();
-                    if (navigator.vibrate) navigator.vibrate(20);
-                    
-                    let progress = elapsed / totalDuration;
-                    let currentInterval = startInterval + (endInterval - startInterval) * Math.pow(progress, 2);
-                    
-                    elapsed += currentInterval;
-                    if (elapsed < totalDuration) {
-                        setTimeout(nextTick, currentInterval);
-                    }
-                }
-                nextTick();
+                let prizeResult = data.prize;
+                let isWon = data.status === 'WON';
 
-                setTimeout(() => {
-                    document.getElementById('step-spin').classList.add('hidden');
-                    document.getElementById('step-result').classList.remove('hidden');
+                document.getElementById('step-spin').classList.add('hidden');
+                document.getElementById('step-result').classList.remove('hidden');
+                
+                if (!isWon) {
+                    const minor = getMinorPrizeFromAngle(stoppedAngle);
+                    state.finalMinorPrize = minor;
                     
-                    if(prizeResult === 'NADA' || prizeResult === 'GIRE +1') {
-                        const minor = state.finalMinorPrize;
-                        // Verifica se é uma string "negativa" conhecida
-                        const isNothing = !minor || minor.toUpperCase() === 'NADA' || minor.toUpperCase() === 'IHHH' || minor.toUpperCase() === 'QUASE' || minor.toUpperCase() === 'NÃO FOI DESSA VEZ';
-                        const btnPlayAgain = document.getElementById('btn-play-again');
+                    const isNothing = !minor || minor.toUpperCase() === 'NADA' || minor.toUpperCase() === 'IHHH' || minor.toUpperCase() === 'QUASE' || minor.toUpperCase() === 'NÃO FOI DESSA VEZ';
+                    const btnPlayAgain = document.getElementById('btn-play-again');
+                    
+                    const isGireMais1 = minor && (minor.toUpperCase().trim() === 'GIRE +1' || minor.toUpperCase().includes('GIRE'));
+                    if (isGireMais1) {
+                        document.getElementById('result-title').innerText = "GIRE +1 !";
+                        document.getElementById('result-title').style.color = "#38bdf8";
+                        document.getElementById('result-desc').innerText = "Você ganhou uma rodada grátis!";
+                        document.getElementById('result-qr-container').classList.add('hidden');
+                        document.getElementById('result-shortcode').innerText = "";
                         
-                        const isGireMais1 = minor && (minor.toUpperCase().trim() === 'GIRE +1' || minor.toUpperCase().includes('GIRE'));
-                        if (isGireMais1) {
-                            document.getElementById('result-title').innerText = "GIRE +1 !";
-                            document.getElementById('result-title').style.color = "#38bdf8";
-                            document.getElementById('result-desc').innerText = "Você ganhou uma rodada grátis!";
-                            document.getElementById('result-qr-container').classList.add('hidden');
-                            document.getElementById('result-shortcode').innerText = "";
+                        btnPlayAgain.innerText = "Girar Novamente (Grátis!)";
+                        btnPlayAgain.onclick = () => {
+                            document.getElementById('step-result').classList.add('hidden');
+                            document.getElementById('step-spin').classList.remove('hidden');
                             
-                            btnPlayAgain.innerText = "Girar Novamente (Grátis!)";
-                            btnPlayAgain.onclick = () => {
-                                document.getElementById('step-result').classList.add('hidden');
-                                document.getElementById('step-spin').classList.remove('hidden');
-                                
-                                // Reseta a UI da roleta
-                                document.getElementById('btn-girar').disabled = false;
-                                document.getElementById('btn-girar').innerText = "GIRAR";
-                                document.getElementById('roleta-text-display').innerText = "ROTAÇÃO";
-                                
-                                // Restaura o botão original para a próxima vez
-                                btnPlayAgain.innerText = "Jogar Novamente";
-                                btnPlayAgain.onclick = () => location.reload();
-                            };
-                        } else if (!isNothing) {
-                            document.getElementById('result-title').innerText = "Prêmio Menor!";
-                            document.getElementById('result-title').style.color = "#facc15";
-                            document.getElementById('result-desc').innerText = `Consolação: ${minor}. Mostre no balcão!`;
-                            document.getElementById('result-qr-container').classList.remove('hidden');
-                            document.getElementById('result-qr-container').innerHTML = '';
-                            new QRCode(document.getElementById('result-qr-container'), { 
-                                text: `REDEEM_MINOR:${state.roundId}`, 
-                                width: 200, 
-                                height: 200,
-                                colorDark: "#000000",
-                                colorLight: "#ffffff",
-                                correctLevel: 1 // Nível L para quadrados maiores e mais fáceis de ler
-                            });
-                            document.getElementById('result-shortcode').innerText = state.roundId.substring(0, 4).toUpperCase();
-                        } else {
-                            document.getElementById('result-title').innerText = "Que pena!";
-                            document.getElementById('result-title').style.color = "#ef4444";
-                            document.getElementById('result-desc').innerText = minor ? minor : "Não foi dessa vez.";
-                            document.getElementById('result-qr-container').classList.add('hidden');
-                            document.getElementById('result-shortcode').innerText = "";
-                        }
-                    } else {
-                        document.getElementById('result-title').innerText = "Parabéns!";
-                        document.getElementById('result-desc').innerText = `Você ganhou: ${prizeResult}. Mostre este QR ao garçom.`;
+                            btn.disabled = false;
+                            btn.innerText = "INICIAR";
+                            btn.onclick = beginSpin;
+                            
+                            btnPlayAgain.innerText = "Jogar Novamente";
+                            btnPlayAgain.onclick = () => location.reload();
+                        };
+                    } else if (!isNothing) {
+                        document.getElementById('result-title').innerText = "Prêmio Menor!";
+                        document.getElementById('result-title').style.color = "#facc15";
+                        document.getElementById('result-desc').innerText = `Consolação: ${minor}. Mostre no balcão!`;
                         document.getElementById('result-qr-container').classList.remove('hidden');
                         document.getElementById('result-qr-container').innerHTML = '';
                         new QRCode(document.getElementById('result-qr-container'), { 
-                            text: `REDEEM:${state.roundId}`, 
+                            text: `REDEEM_MINOR:${state.roundId}`, 
                             width: 200, 
                             height: 200,
                             colorDark: "#000000",
                             colorLight: "#ffffff",
-                            correctLevel: 1 // Nível L para quadrados maiores e mais fáceis de ler
+                            correctLevel: 1 
                         });
                         document.getElementById('result-shortcode').innerText = state.roundId.substring(0, 4).toUpperCase();
+                    } else {
+                        document.getElementById('result-title').innerText = "Que pena!";
+                        document.getElementById('result-title').style.color = "#ef4444";
+                        document.getElementById('result-desc').innerText = minor ? minor : "Não foi dessa vez.";
+                        document.getElementById('result-qr-container').classList.add('hidden');
+                        document.getElementById('result-shortcode').innerText = "";
                     }
-                }, 4000);
+                } else {
+                    document.getElementById('result-title').innerText = "Parabéns!";
+                    document.getElementById('result-desc').innerText = `Você ganhou: ${prizeResult}. Mostre este QR ao garçom.`;
+                    document.getElementById('result-qr-container').classList.remove('hidden');
+                    document.getElementById('result-qr-container').innerHTML = '';
+                    new QRCode(document.getElementById('result-qr-container'), { 
+                        text: `REDEEM:${state.roundId}`, 
+                        width: 200, 
+                        height: 200,
+                        colorDark: "#000000",
+                        colorLight: "#ffffff",
+                        correctLevel: 1 
+                    });
+                    document.getElementById('result-shortcode').innerText = state.roundId.substring(0, 4).toUpperCase();
+                }
 
-            } catch(e) {
-                alert(e.message);
+            } catch (e) {
+                alert("Erro ao parar: " + e.message);
+                btn.disabled = false;
+                btn.innerText = "Tentar Novamente";
+                btn.onclick = stopSpin;
             }
         }
+
 
         // Inicia a aplicação
         window.onload = init;

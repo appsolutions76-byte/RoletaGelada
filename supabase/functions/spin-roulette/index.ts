@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { round_id } = await req.json()
+    const { round_id, action, angle } = await req.json()
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -39,39 +39,53 @@ serve(async (req) => {
       .single()
 
     const currentBalance = vault ? Number(vault.accumulated_balance) : 0;
-    
-    // A Matemática de Trava
     const prizeCost = Number(round.prizes.prize_cost);
     const targetBalance = prizeCost * Number(settings.markup_multiplier); // Ex: 10 * 1.5 = 15
 
-    let won = false;
-    if (currentBalance >= targetBalance) {
-      const chance = Math.random();
-      if (chance <= 0.15) { // 15% de chance de ganhar quando a trava libera
-        won = true;
+    if (action === 'start') {
+      let difficulty = 'hard';
+      if (currentBalance >= targetBalance) {
+        difficulty = 'easy';
       }
+      return new Response(JSON.stringify({ difficulty }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }})
     }
 
-    if (won) {
-      // Deduz o custo da cerveja do cofre
-      if (vault) {
-        await supabaseClient
-          .from('vaults')
-          .update({ accumulated_balance: currentBalance - targetBalance }) // Reseta pagando o custo e lucro
-          .eq('id', vault.id);
-      } else {
-        await supabaseClient
-          .from('vaults')
-          .insert({ prize_id: round.prize_id, accumulated_balance: 0 }); // Zera se por acaso ganhou de primeira, o que é raro mas possível se targetBalance for 0
-      }
-        
-      await supabaseClient.from('rounds').update({ status: 'completed', result: 'WON' }).eq('id', round.id);
+    if (action === 'stop') {
+      let won = false;
       
-      return new Response(JSON.stringify({ prize: round.prizes.name }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }})
-    } else {
-      await supabaseClient.from('rounds').update({ status: 'completed', result: 'LOST' }).eq('id', round.id);
-      return new Response(JSON.stringify({ prize: 'NADA' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }})
+      // Validação do ângulo
+      // A fatia GANHOU (90deg) está no topo quando a roleta gira 270deg. 
+      // Com largura de 60deg, os limites são 240 a 300.
+      if (angle !== undefined) {
+        const normalizedAngle = angle % 360;
+        if (normalizedAngle >= 240 && normalizedAngle <= 300) {
+          won = true;
+        }
+      }
+
+      if (won) {
+        // Deduz o custo da cerveja do cofre
+        if (vault) {
+          await supabaseClient
+            .from('vaults')
+            .update({ accumulated_balance: currentBalance - targetBalance }) // Reseta pagando o custo e lucro
+            .eq('id', vault.id);
+        } else {
+          await supabaseClient
+            .from('vaults')
+            .insert({ prize_id: round.prize_id, accumulated_balance: 0 }); 
+        }
+          
+        await supabaseClient.from('rounds').update({ status: 'completed', result: 'WON' }).eq('id', round.id);
+        
+        return new Response(JSON.stringify({ prize: round.prizes.name, status: 'WON' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }})
+      } else {
+        await supabaseClient.from('rounds').update({ status: 'completed', result: 'LOST' }).eq('id', round.id);
+        return new Response(JSON.stringify({ prize: 'NADA', status: 'LOST' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }})
+      }
     }
+    
+    return new Response(JSON.stringify({ error: 'Invalid action' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }})
 
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }})
