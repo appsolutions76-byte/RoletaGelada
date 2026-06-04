@@ -156,7 +156,7 @@
         const BAR_ID = params.get('bar');
 
         let state = { prizeId: null, prizeName: null, roundId: null, prizeBet: 0, finalMinorPrize: null, sliceMap: {} };
-        let spinState = { isSpinning: false, currentRotation: 0, speed: 5, animFrame: null };
+        let spinState = { isSpinning: false, currentRotation: 0, speed: 5, animFrame: null, timer: 10, timerInterval: null };
 
         async function sfetch(endpoint, method = 'GET', body = null) {
             const options = {
@@ -353,7 +353,8 @@
                 // hard = rápido e difícil (30 graus por frame = ~0.2s por volta, muito difícil acertar)
                 spinState.speed = (res.difficulty === 'easy') ? 3 : 28; 
                 
-                btn.innerText = "PARAR";
+                spinState.timer = 10;
+                btn.innerText = `PARAR (${spinState.timer}s)`;
                 btn.style.backgroundColor = '#ef4444'; // Vermelho para chamar a atenção
                 btn.disabled = false;
                 btn.onclick = stopSpin;
@@ -366,6 +367,16 @@
                 if (window.audioCtx.state === 'suspended') window.audioCtx.resume();
                 
                 animateSpin();
+
+                spinState.timerInterval = setInterval(() => {
+                    spinState.timer--;
+                    if (spinState.timer > 0) {
+                        btn.innerText = `PARAR (${spinState.timer}s)`;
+                    } else {
+                        clearInterval(spinState.timerInterval);
+                        forceTimeout();
+                    }
+                }, 1000);
 
             } catch (e) {
                 alert("Erro ao iniciar roleta: " + e.message);
@@ -413,7 +424,36 @@
             return "NADA"; 
         }
 
+        async function forceTimeout() {
+            spinState.isSpinning = false;
+            cancelAnimationFrame(spinState.animFrame);
+            
+            const btn = document.getElementById('btn-girar');
+            btn.disabled = true;
+            btn.innerText = "Tempo Esgotado!";
+            btn.style.backgroundColor = '';
+            
+            // Força um ângulo de perda absoluta (ex: 0 = "NADA")
+            const stoppedAngle = 0; 
+
+            try {
+                await sfetch(`/functions/v1/spin-roulette`, 'POST', { round_id: state.roundId, action: 'stop', angle: stoppedAngle });
+                
+                document.getElementById('step-spin').classList.add('hidden');
+                document.getElementById('step-result').classList.remove('hidden');
+                
+                document.getElementById('result-title').innerText = "Tempo Esgotado!";
+                document.getElementById('result-title').style.color = "#ef4444";
+                document.getElementById('result-desc').innerText = "Você demorou muito para parar e perdeu a rodada.";
+                document.getElementById('result-qr-container').classList.add('hidden');
+                document.getElementById('result-shortcode').innerText = "";
+            } catch (e) {
+                alert("Erro ao processar timeout: " + e.message);
+            }
+        }
+
         async function stopSpin() {
+            if (spinState.timerInterval) clearInterval(spinState.timerInterval);
             spinState.isSpinning = false;
             cancelAnimationFrame(spinState.animFrame);
             
