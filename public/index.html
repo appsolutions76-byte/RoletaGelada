@@ -114,6 +114,11 @@
             <div id="pix-area" class="hidden">
                 <p style="color:#facc15; font-size: 14px; margin-top: 15px;">Aguardando pagamento...</p>
                 <div id="qr-container"></div>
+                <div id="pix-copy-area" class="hidden mt-4 flex flex-col items-center w-full">
+                    <input type="text" id="pix-copia-cola" class="w-full bg-slate-800 text-white rounded p-2 text-center text-xs mb-2 border border-slate-700" readonly>
+                    <button class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded w-full" onclick="copyPixCode()">Copiar Código Pix</button>
+                    <p id="copy-msg" class="text-green-400 text-xs hidden mt-1">Copiado!</p>
+                </div>
             </div>
         </div>
 
@@ -318,6 +323,9 @@
 
                 // Polling simplificado para verificar se foi pago (para Pix Real)
                 if(!data.qr_code.startsWith('MOCK')) {
+                    document.getElementById('pix-copy-area').classList.remove('hidden');
+                    document.getElementById('pix-copia-cola').value = data.qr_code;
+                    
                     state.pollingInterval = setInterval(async () => {
                         try {
                             const rounds = await sfetch(`/rest/v1/rounds?id=eq.${state.roundId}&select=status`);
@@ -333,6 +341,16 @@
                 alert(e.message);
                 btn.disabled = false; btn.innerText = "Tentar Novamente";
             }
+        }
+
+        function copyPixCode() {
+            const input = document.getElementById('pix-copia-cola');
+            input.select();
+            input.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(input.value);
+            const msg = document.getElementById('copy-msg');
+            msg.classList.remove('hidden');
+            setTimeout(() => msg.classList.add('hidden'), 2000);
         }
 
         function startRoulette() {
