@@ -101,7 +101,7 @@ serve(async (req) => {
       payment_method_id: "pix",
       payer: { email: "cliente@roletagelada.com" },
       external_reference: round.id,
-      notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mp-webhook`,
+      notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mp-webhook?external_reference=${round.id}&topic=payment`,
       application_fee: platformFee // Taxa da plataforma
     };
 
