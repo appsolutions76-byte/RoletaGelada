@@ -32,20 +32,20 @@ serve(async (req) => {
     const { action, payload } = await req.json()
 
     if (action === 'delete_partner') {
-        const { bar_id } = payload;
-        if (!bar_id) throw new Error("bar_id is required");
+        const { partner_id } = payload;
+        if (!partner_id) throw new Error("partner_id is required");
         
-        if (bar_id === user.id) {
-            // É a conta Master (acabou na tabela de bars por acidente). Apenas deleta de bars, NÃO do auth!
-            const { error: barError } = await supabaseAdmin.from('bars').delete().eq('id', bar_id);
-            if (barError) throw barError;
+        if (partner_id === user.id) {
+            // É a conta Master (acabou na tabela de partners por acidente). Apenas deleta de partners, NÃO do auth!
+            const { error: partnerError } = await supabaseAdmin.from('partners').delete().eq('id', partner_id);
+            if (partnerError) throw partnerError;
         } else {
-            // Deleta o usuário da tabela auth.users (causa cascade delete na tabela bars)
-            const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(bar_id);
+            // Deleta o usuário da tabela auth.users (causa cascade delete na tabela partners)
+            const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(partner_id);
             if (deleteError) {
-                // Se falhar (ex: user não existe no auth.users), força a deleção na tabela bars
-                const { error: barError } = await supabaseAdmin.from('bars').delete().eq('id', bar_id);
-                if (barError) throw deleteError;
+                // Se falhar (ex: user não existe no auth.users), força a deleção na tabela partners
+                const { error: partnerError } = await supabaseAdmin.from('partners').delete().eq('id', partner_id);
+                if (partnerError) throw deleteError;
             }
         }
 

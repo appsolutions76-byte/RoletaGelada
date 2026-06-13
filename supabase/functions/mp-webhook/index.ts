@@ -36,7 +36,7 @@ serve(async (req) => {
           betAmount = body.transaction_amount;
       } else {
          // Se não vier no corpo, na vida real você precisaria buscar o pagamento na API do MP
-         // usando o token do bar. Como não temos o token do bar fácil aqui (precisaria do roundId para achar o bar),
+         // usando o token do parceiro. Como não temos o token do parceiro fácil aqui (precisaria do roundId para achar o parceiro),
          // vamos assumir que o frontend já confirmou ou buscar pela external_reference se vier na URL.
          
          // Para simplificar o MVP e garantir o funcionamento: 

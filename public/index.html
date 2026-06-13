@@ -91,8 +91,8 @@
     <div class="container">
         <!-- Header -->
         <header class="text-center mb-8 flex flex-col items-center">
-            <img id="bar-logo" src="" alt="Logo" class="h-24 mb-4 hidden rounded-xl shadow-lg object-contain">
-            <h1 id="bar-name" class="text-3xl font-black text-white">Carregando...</h1>
+            <img id="partner-logo" src="" alt="Logo" class="h-24 mb-4 hidden rounded-xl shadow-lg object-contain">
+            <h1 id="partner-name" class="text-3xl font-black text-white">Carregando...</h1>
             <p class="text-xs text-gray-500 mt-2 font-medium tracking-wider uppercase">Powered by Roleta Gelada</p>
         </header>
 
@@ -152,7 +152,7 @@
         const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqdXBzZGFrZHhleHhjZGtxZnpmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2NjY2NDYsImV4cCI6MjA5NTI0MjY0Nn0.5XKPuhn34s-EUf6NXqNwpZysQoJVsyBIHQeVg4wnyyo';
         
         const params = new URLSearchParams(window.location.search);
-        const BAR_ID = params.get('bar');
+        const PARTNER_ID = params.get('partner');
 
         let state = { prizeId: null, prizeName: null, roundId: null, prizeBet: 0, finalMinorPrize: null, sliceMap: {} };
         let spinState = { isSpinning: false, currentRotation: 0, speed: 5, animFrame: null, timer: 10, timerInterval: null, direction: 1 };
@@ -196,41 +196,49 @@
                 }
             }
             if (logoUrl && logoUrl.startsWith('http')) {
-                const logoEl = document.getElementById('bar-logo');
+                const logoEl = document.getElementById('partner-logo');
                 logoEl.src = logoUrl;
                 logoEl.classList.remove('hidden');
-                document.getElementById('bar-name').classList.remove('text-3xl');
-                document.getElementById('bar-name').classList.add('text-xl', 'text-gray-300');
+                document.getElementById('partner-name').classList.remove('text-3xl');
+                document.getElementById('partner-name').classList.add('text-xl', 'text-gray-300');
             }
         }
 
         async function init() {
             const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
             
-            if (!BAR_ID || !uuidRegex.test(BAR_ID)) {
-                document.getElementById('bar-name').innerText = "Link de Bar Inválido ou Desatualizado";
-                document.getElementById('step-list').innerHTML = "<p class='text-center text-red-500 font-bold mt-10'>Você está usando um link antigo (modo simulação).<br><br>Peça ao dono do bar para gerar um NOVO LINK no painel dele.</p>";
+            if (!PARTNER_ID || !uuidRegex.test(PARTNER_ID)) {
+                document.getElementById('partner-name').innerText = "Bem-vindo ao Roleta Gelada!";
+                document.getElementById('partner-name').classList.remove('text-3xl');
+                document.getElementById('partner-name').classList.add('text-xl');
+                document.getElementById('step-list').innerHTML = `
+                    <div class="text-center mt-10">
+                        <p class="text-gray-300 mb-6" style="font-size: 15px; line-height: 1.5;">Para jogar, você precisa acessar esta página escaneando o QR Code fornecido pelo parceiro.</p>
+                        <p class="text-gray-500 text-sm mb-4">Se você é dono de um negócio e deseja acessar seu painel, clique abaixo:</p>
+                        <a href="admin.html" style="display:inline-block; text-decoration:none; padding-top:12px; padding-bottom:12px; font-size: 16px;" class="btn-blue w-full">Acessar Painel do Parceiro</a>
+                    </div>
+                `;
                 return;
             }
             try {
                 let prizes = [];
                 let minorPrizes = ["Amendoim", "Shot de Cachaça", "IHHH", "GIRE +1", "NADA"];
 
-                const bars = await sfetch(`/rest/v1/bars?id=eq.${BAR_ID}&select=name,minor_prizes,consolation_fee,theme_color,theme_background,theme_logo_url`);
-                if(bars && bars.length > 0) {
-                    const bar = bars[0];
-                    document.getElementById('bar-name').innerText = bar.name;
-                    if(bar.minor_prizes) minorPrizes = bar.minor_prizes.split(',').map(s => s.trim());
-                    window.CONSOLATION_FEE = parseFloat(bar.consolation_fee) || 0;
-                    applyTheme(bar.theme_color, bar.theme_background, bar.theme_logo_url);
+                const partners = await sfetch(`/rest/v1/partners?id=eq.${PARTNER_ID}&select=name,minor_prizes,consolation_fee,theme_color,theme_background,theme_logo_url`);
+                if(partners && partners.length > 0) {
+                    const partner = partners[0];
+                    document.getElementById('partner-name').innerText = partner.name;
+                    if(partner.minor_prizes) minorPrizes = partner.minor_prizes.split(',').map(s => s.trim());
+                    window.CONSOLATION_FEE = parseFloat(partner.consolation_fee) || 0;
+                    applyTheme(partner.theme_color, partner.theme_background, partner.theme_logo_url);
                 } else {
-                    document.getElementById('bar-name').innerText = "Bar não encontrado.";
-                    document.getElementById('step-list').innerHTML = "<p class='text-center text-red-500 font-bold mt-10'>Bar inativo ou inexistente no banco de dados.</p>";
+                    document.getElementById('partner-name').innerText = "Parceiro não encontrado.";
+                    document.getElementById('step-list').innerHTML = "<p class='text-center text-red-500 font-bold mt-10'>Parceiro inativo ou inexistente no banco de dados.</p>";
                     return;
                 }
 
                 // Busca prêmios reais
-                prizes = await sfetch(`/rest/v1/prizes?bar_id=eq.${BAR_ID}&active=eq.true&select=*`);
+                prizes = await sfetch(`/rest/v1/prizes?partner_id=eq.${PARTNER_ID}&active=eq.true&select=*`);
 
                 // Injeta prêmios menores na roleta
                 const losingAngles = [30, 150, 210, 270, 330];

@@ -23,7 +23,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Verifica a identidade real do garçom/dono do bar
+    // Verifica a identidade real do parceiro
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
     if (authError || !user) throw new Error("Unauthorized");
 
@@ -32,7 +32,7 @@ serve(async (req) => {
 
     let target_round_id = round_id;
     
-    // Se o round_id tiver 4 caracteres, é um shortcode manual digitado pelo garçom
+    // Se o round_id tiver 4 caracteres, é um shortcode manual digitado
     if (round_id.length === 4) {
         const shortcode = round_id.toLowerCase();
         const startUuid = `${shortcode}0000-0000-0000-0000-000000000000`;
@@ -60,10 +60,9 @@ serve(async (req) => {
 
     if (roundError || !round) throw new Error("Código inválido ou rodada não encontrada.");
 
-    // Verifica se a rodada pertence ao bar que está logado
-    // Em prêmios menores, o bar_id está direto na round (novo fix). Se não, pega do prize.
-    const barId = round.bar_id || (round.prizes ? round.prizes.bar_id : null);
-    if (barId !== user.id) throw new Error("Este prêmio NÃO pertence ao seu bar!");
+    // Verifica se a rodada pertence ao parceiro que está logado
+    const partnerId = round.partner_id || (round.prizes ? round.prizes.partner_id : null);
+    if (partnerId !== user.id) throw new Error("Este prêmio NÃO pertence ao seu painel!");
 
     // O status tem que estar completo (girou a roleta)
     if (round.status !== 'completed') throw new Error("Esta rodada ainda não foi finalizada pelo cliente.");

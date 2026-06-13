@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel do Bar - Roleta Gelada</title>
+    <title>Painel do Parceiro - Roleta Gelada</title>
     <script>
         // Declaramos variáveis globais cedo
-        window.BAR_ID = null;
+        window.PARTNER_ID = null;
         console.log("APP VERSION: REAL MODE FINAL - NO SIMULATION v2.0");
 
         function copyAppUrl() {
-            if (!window.BAR_ID) return alert("Erro: Bar ID não encontrado. Faça login novamente.");
-            const barName = document.getElementById('nav-bar-name').innerText;
-            const appUrl = `${window.location.origin}/index.html?bar=${window.BAR_ID}`;
-            prompt(`Link Oficial do Bar: ${barName} gerado com sucesso!\n\nCopie o link abaixo para abrir no celular e rodar o aplicativo:`, appUrl);
+            if (!window.PARTNER_ID) return alert("Erro: ID do Parceiro não encontrado. Faça login novamente.");
+            const partnerName = document.getElementById('nav-partner-name').innerText;
+            const appUrl = `${window.location.origin}/index.html?partner=${window.PARTNER_ID}`;
+            prompt(`Link Oficial: ${partnerName} gerado com sucesso!\n\nCopie o link abaixo para abrir no celular e rodar o aplicativo:`, appUrl);
         }
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -27,28 +27,25 @@
         <div class="bg-gray-800 p-8 rounded-2xl shadow-2xl border border-gray-700 max-w-sm w-full">
             <h2 class="text-2xl font-black mb-6 text-center text-white">Área do Parceiro</h2>
             
-            <div class="space-y-4">
-                <input type="text" id="auth-bar-name" placeholder="Nome do seu Bar (Apenas Cadastro)" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none">
-                <input type="email" id="auth-email" placeholder="E-mail" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none">
-                <input type="password" id="auth-password" placeholder="Senha" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none">
+            <form onsubmit="event.preventDefault(); handleLogin();" class="space-y-4">
+                <input type="text" id="auth-partner-name" placeholder="Nome do seu Negócio (Apenas Cadastro)" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none">
+                <input type="email" id="auth-email" placeholder="E-mail" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none" autocomplete="username">
+                <input type="password" id="auth-password" placeholder="Senha" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none" autocomplete="current-password">
                 
                 <div class="flex gap-2 pt-2">
-                    <button onclick="handleLogin()" class="w-1/2 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg transition">Entrar</button>
-                    <button onclick="handleSignUp()" class="w-1/2 bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-lg transition">Criar Conta</button>
-                </div>
-                <div class="pt-4 border-t border-gray-700 mt-2 hidden">
-                    <button type="button" onclick="handleSimulationLogin()" class="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-3 rounded-lg transition">Modo Simulação (Teste Rápido)</button>
+                    <button type="submit" class="w-1/2 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg transition">Entrar</button>
+                    <button type="button" onclick="handleSignUp()" class="w-1/2 bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-lg transition">Criar Conta</button>
                 </div>
                 <p id="auth-error" class="text-red-400 text-sm text-center font-bold hidden"></p>
-                <p class="text-xs text-gray-500 text-center mt-4">Para cadastrar, preencha o Nome do Bar, e-mail e senha e clique em Criar Conta.</p>
-            </div>
+                <p class="text-xs text-gray-500 text-center mt-4">Para cadastrar, preencha o Nome do Negócio, e-mail e senha e clique em Criar Conta.</p>
+            </form>
         </div>
     </div>
 
     <!-- PAINEL PRINCIPAL -->
     <div id="dashboard-screen" class="hidden w-full">
         <nav class="bg-black/50 p-4 border-b border-gray-800 flex justify-between items-center sticky top-0 z-50">
-            <h1 class="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500" id="nav-bar-name">Carregando...</h1>
+            <h1 class="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500" id="nav-partner-name">Carregando...</h1>
             <div class="flex items-center gap-4">
                 <button onclick="copyAppUrl()" class="bg-blue-600/20 text-blue-400 border border-blue-500/30 px-3 py-1 rounded-lg text-sm hover:bg-blue-600/30 font-bold transition">Copiar Link pro Cliente</button>
                 <button onclick="logout()" class="text-sm font-bold text-gray-400 underline">Sair 🔒</button>
@@ -56,37 +53,35 @@
         </nav>
 
         <main class="max-w-4xl mx-auto p-6 mt-6 space-y-8">
-            <!-- KPIs do Bar -->
+            <!-- KPIs do Parceiro -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div class="bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-700">
                     <h3 class="text-gray-400 font-bold mb-2">Faturamento Líquido</h3>
-                    <p id="kpi-bar-net" class="text-4xl font-black text-yellow-400">R$ 0,00</p>
+                    <p id="kpi-partner-net" class="text-4xl font-black text-yellow-400">R$ 0,00</p>
                     <p class="text-xs text-gray-500 mt-1">Livre de taxas e consolação</p>
                 </div>
                 <div class="bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-700">
                     <h3 class="text-gray-400 font-bold mb-2">Fundo Consolação</h3>
-                    <p id="kpi-bar-consolation" class="text-4xl font-black text-green-400">R$ 0,00</p>
+                    <p id="kpi-partner-consolation" class="text-4xl font-black text-green-400">R$ 0,00</p>
                     <p class="text-xs text-gray-500 mt-1">Reserva para prêmios menores</p>
                 </div>
                 <div class="bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-700">
                     <h3 class="text-gray-400 font-bold mb-2">Total de Giros</h3>
-                    <p id="kpi-bar-spins" class="text-4xl font-black text-cyan-400">0</p>
+                    <p id="kpi-partner-spins" class="text-4xl font-black text-cyan-400">0</p>
                 </div>
             </div>
 
             <!-- Auth MP -->
             <section class="bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-700">
                 <h2 class="text-2xl font-bold mb-2 text-white">Conta Mercado Pago</h2>
-                <p class="text-gray-400 mb-4">Cole seu Access Token (Simulação ou Real) do Mercado Pago para receber o dinheiro das jogadas (Pix).</p>
+                <p class="text-gray-400 mb-4">Vincule sua conta do Mercado Pago para receber o dinheiro das jogadas automaticamente em sua conta, com total segurança.</p>
                 <div id="mp-status" class="mb-4 font-bold text-red-400">❌ Não conectado</div>
-                <div class="flex gap-4 items-end">
-                    <div class="w-2/3">
-                        <label class="text-xs font-bold text-gray-500 mb-1 block">Access Token (Mercado Pago)</label>
-                        <input type="text" id="mp-token-input" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none" placeholder="APP_USR-...">
-                    </div>
-                    <button onclick="saveMPToken()" class="w-1/3 bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-3 rounded-lg shadow transition">Salvar Token</button>
+                <div class="flex flex-col items-start gap-2">
+                    <button id="btn-connect-mp" onclick="connectMercadoPago()" class="bg-[#009ee3] hover:bg-[#008cce] text-white font-bold px-6 py-3 rounded-lg shadow transition flex items-center gap-2">
+                        🤝 Vincular Conta Mercado Pago
+                    </button>
+                    <p class="text-xs text-gray-500">Ao clicar, você será redirecionado ao painel oficial do Mercado Pago para autorizar as transferências Pix do sistema.</p>
                 </div>
-                <p id="mp-token-msg" class="text-green-400 text-sm mt-2 font-bold hidden">Token salvo com sucesso!</p>
             </section>
 
             <!-- Personalização do App -->
@@ -250,7 +245,7 @@
                 // -- Autenticação --
                 supabaseClient.auth.onAuthStateChange((event, session) => {
                     if (session) {
-                        window.BAR_ID = session.user.id;
+                        window.PARTNER_ID = session.user.id;
                         document.getElementById('auth-screen').classList.add('hidden');
                         document.getElementById('dashboard-screen').classList.remove('hidden');
                         loadDashboard();
@@ -268,10 +263,11 @@
             try {
                 const e = document.getElementById('auth-email').value;
                 const p = document.getElementById('auth-password').value;
+                if (!e || !p) return showError("Preencha e-mail e senha para entrar.");
                 const { error } = await supabaseClient.auth.signInWithPassword({ email: e, password: p });
-                if (error) showError(error.message);
+                if (error) showError("Erro no login: " + error.message);
             } catch(e) {
-                alert("ERRO GRAVE: " + e.message);
+                showError("ERRO GRAVE: " + e.message);
             }
         }
 
@@ -317,30 +313,30 @@
         // -- Dashboard --
         async function loadDashboard() {
             try {
-                if (!window.BAR_ID) return;
+                if (!window.PARTNER_ID) return;
                 
-                const { data: bar, error: barError } = await supabaseClient.from('bars').select('*').eq('id', window.BAR_ID).maybeSingle();
-                if(barError) throw new Error("Falha ao ler tabela bars: " + barError.message);
-                if(!bar) {
-                    alert("⚠️ ERRO GRAVE: Sua conta de Bar não foi encontrada no banco de dados. \nID Buscado: " + window.BAR_ID + "\nClique em Sair e tente logar novamente.");
+                const { data: partner, error: partnerError } = await supabaseClient.from('partners').select('*').eq('id', window.PARTNER_ID).maybeSingle();
+                if(partnerError) throw new Error("Falha ao ler tabela partners: " + partnerError.message);
+                if(!partner) {
+                    alert("⚠️ ERRO GRAVE: Sua conta de Parceiro não foi encontrada no banco de dados. \nID Buscado: " + window.PARTNER_ID + "\nClique em Sair e tente logar novamente.");
                     return;
                 }
 
-                document.getElementById('nav-bar-name').innerText = bar.name;
+                document.getElementById('nav-partner-name').innerText = partner.name;
                 
-                if (bar.minor_prizes !== undefined && bar.minor_prizes !== null) document.getElementById('minor-prizes-input').value = bar.minor_prizes;
-                if (bar.consolation_fee !== undefined && bar.consolation_fee !== null) document.getElementById('consolation-fee-input').value = bar.consolation_fee;
-                if (bar.theme_color) document.getElementById('theme-color-input').value = bar.theme_color;
-                if (bar.theme_background) document.getElementById('theme-bg-input').value = bar.theme_background;
-                if (bar.theme_logo_url) document.getElementById('theme-logo-input').value = bar.theme_logo_url;
+                if (partner.minor_prizes !== undefined && partner.minor_prizes !== null) document.getElementById('minor-prizes-input').value = partner.minor_prizes;
+                if (partner.consolation_fee !== undefined && partner.consolation_fee !== null) document.getElementById('consolation-fee-input').value = partner.consolation_fee;
+                if (partner.theme_color) document.getElementById('theme-color-input').value = partner.theme_color;
+                if (partner.theme_background) document.getElementById('theme-bg-input').value = partner.theme_background;
+                if (partner.theme_logo_url) document.getElementById('theme-logo-input').value = partner.theme_logo_url;
 
-                if (bar.mp_access_token) {
+                if (partner.mp_connected) {
                     document.getElementById('mp-status').innerHTML = "✅ Conectado ao Mercado Pago";
                     document.getElementById('mp-status').className = "mb-4 font-semibold text-green-600";
-                    document.getElementById('mp-token-input').value = bar.mp_access_token;
+                    document.getElementById('btn-connect-mp').innerText = "🔄 Reconectar Mercado Pago";
                 }
 
-                const { data: prizes } = await supabaseClient.from('prizes').select('*').eq('bar_id', window.BAR_ID);
+                const { data: prizes } = await supabaseClient.from('prizes').select('*').eq('partner_id', window.PARTNER_ID);
                 const tbody = document.getElementById('table-prizes');
                 tbody.innerHTML = '';
                 if (prizes) {
@@ -364,14 +360,14 @@
                 window.MARKUP = settings?.markup_multiplier ?? 1.5;
                 window.FEE = settings?.platform_fee_percentage ?? 0.05;
 
-                const { data: rounds, error: roundsError } = await supabaseClient.from('rounds').select('bet_amount, status').eq('bar_id', window.BAR_ID);
+                const { data: rounds, error: roundsError } = await supabaseClient.from('rounds').select('bet_amount, status').eq('partner_id', window.PARTNER_ID);
                 if (roundsError) throw new Error("Erro na tabela rounds: " + roundsError.message);
 
                 const paid = rounds ? rounds.filter(r => ['paid','spinning','completed'].includes(r.status)) : [];
                 const rev = paid.reduce((acc, curr) => acc + Number(curr.bet_amount), 0);
                 const totalSpins = paid.length;
                 
-                const consolationFee = parseFloat(bar.consolation_fee) || 0;
+                const consolationFee = parseFloat(partner.consolation_fee) || 0;
                 const totalConsolation = totalSpins * consolationFee;
                 const platformFeeTotal = rev * window.FEE;
                 const netRev = rev - platformFeeTotal - totalConsolation;
@@ -385,9 +381,9 @@
                 if (!window.realtimeSubscribed) {
                     window.realtimeSubscribed = true;
                     supabaseClient.channel('admin-rounds').on('postgres_changes', { event: '*', schema: 'public', table: 'rounds' }, (payload) => {
-                        if (payload.new && payload.new.bar_id === window.BAR_ID) {
+                        if (payload.new && payload.new.partner_id === window.PARTNER_ID) {
                             loadDashboard();
-                        } else if (payload.old && payload.old.bar_id === window.BAR_ID) {
+                        } else if (payload.old && payload.old.partner_id === window.PARTNER_ID) {
                             loadDashboard();
                         } else if (!payload.new && !payload.old) {
                             loadDashboard(); // Fallback se o payload vier vazio
@@ -409,7 +405,7 @@
             if (window.isSimulationMode) return; // tratado acima
             const val = document.getElementById('minor-prizes-input').value;
             const fee = parseFloat(document.getElementById('consolation-fee-input').value) || 0;
-            const { error } = await supabaseClient.from('bars').update({ minor_prizes: val, consolation_fee: fee }).eq('id', window.BAR_ID);
+            const { error } = await supabaseClient.from('partners').update({ minor_prizes: val, consolation_fee: fee }).eq('id', window.PARTNER_ID);
             const msg = document.getElementById('minor-prizes-msg');
             if (error) {
                 msg.innerText = "Atenção: Para o modo real funcionar, crie a coluna 'minor_prizes' tipo Text na tabela bars no Supabase!";
@@ -427,7 +423,7 @@
             const tBg = document.getElementById('theme-bg-input').value;
             const tLogo = document.getElementById('theme-logo-input').value;
             
-            const { error } = await supabaseClient.from('bars').update({ theme_color: tColor, theme_background: tBg, theme_logo_url: tLogo }).eq('id', window.BAR_ID);
+            const { error } = await supabaseClient.from('partners').update({ theme_color: tColor, theme_background: tBg, theme_logo_url: tLogo }).eq('id', window.PARTNER_ID);
             const msg = document.getElementById('theme-msg');
             if (error) {
                 msg.innerText = "Atenção: Rode a migration 03 para criar as colunas de tema no Supabase!";
@@ -440,23 +436,34 @@
             setTimeout(() => msg.classList.add('hidden'), 5000);
         }
 
-        async function saveMPToken() {
-            const token = document.getElementById('mp-token-input').value;
-            if (!token) return alert('Digite um token válido!');
-            
-            const { error } = await supabaseClient.from('bars').update({ mp_access_token: token }).eq('id', window.BAR_ID);
-            const msg = document.getElementById('mp-token-msg');
-            if (error) {
-                msg.innerText = "Erro ao salvar token!";
-                msg.className = "text-red-400 text-sm mt-2 font-bold";
-            } else {
-                msg.innerText = "Token salvo com sucesso!";
-                msg.className = "text-green-400 text-sm mt-2 font-bold";
-                document.getElementById('mp-status').innerHTML = "✅ Conectado ao Mercado Pago";
-                document.getElementById('mp-status').className = "mb-4 font-semibold text-green-600";
+        async function connectMercadoPago() {
+            try {
+                // Fetch the public MP_CLIENT_ID from platform settings (or backend if we expose it)
+                // For simplicity, we can fetch it securely from our edge function or platform settings.
+                // Mas, como a chave do CLIENT_ID é pública (ela fica visível no login do MP),
+                // o ideal é pegar da variável de ambiente do Supabase ou você adicionar no painel Master.
+                // Como isso vai pra produção, vou deixar uma constante que precisa ser trocada pelo parceiro ou lida de platform_settings.
+                
+                // Opção 1: Buscar do platform_settings se você decidir salvar o Client ID lá.
+                // Opção 2: Hardcoded
+                const clientId = "7037894894727941"; // <-- Seu N.º da Aplicação (Client ID)
+                
+                if (clientId === "SEU_CLIENT_ID_AQUI") {
+                    alert("Atenção: O sistema Mercado Pago não está configurado ainda. O Administrador Master precisa preencher o CLIENT_ID.");
+                    return;
+                }
+
+                const redirectUri = `${SUPABASE_URL}/functions/v1/mp-oauth`;
+                const state = window.PARTNER_ID;
+                
+                const mpAuthUrl = `https://auth.mercadopago.com/authorization?client_id=${clientId}&response_type=code&platform_id=mp&state=${state}&redirect_uri=${encodeURIComponent(redirectUri)}`;
+                
+                // Abre em nova aba
+                window.open(mpAuthUrl, '_blank');
+                
+            } catch (err) {
+                alert("Erro ao conectar Mercado Pago: " + err.message);
             }
-            msg.classList.remove('hidden');
-            setTimeout(() => msg.classList.add('hidden'), 5000);
         }
 
         async function savePrize() {
@@ -466,7 +473,7 @@
             
             if(!name) return alert("Digite um nome!");
 
-            const { error } = await supabaseClient.from('prizes').insert([{ bar_id: window.BAR_ID, name, prize_cost: cost, bet_amount: bet }]);
+            const { error } = await supabaseClient.from('prizes').insert([{ partner_id: window.PARTNER_ID, name, prize_cost: cost, bet_amount: bet }]);
             if(error) return alert("Erro ao salvar prêmio: " + error.message);
 
             document.getElementById('modal-prize').classList.add('hidden');

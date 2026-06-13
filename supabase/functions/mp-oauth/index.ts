@@ -14,9 +14,9 @@ serve(async (req) => {
   try {
     const url = new URL(req.url);
     const code = url.searchParams.get("code");
-    const barId = url.searchParams.get("state"); // Passamos o ID do bar no parâmetro state do OAuth
+    const partnerId = url.searchParams.get("state"); // Passamos o ID do parceiro no parâmetro state do OAuth
 
-    if (!code || !barId) {
+    if (!code || !partnerId) {
         return new Response("Missing code or state", { status: 400 });
     }
 
@@ -51,20 +51,28 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Salvar token no Bar
-    const { error } = await supabaseClient
-      .from('bars')
-      .update({
+    // Salvar token em partner_secrets
+    const { error: secretsError } = await supabaseClient
+      .from('partner_secrets')
+      .upsert({
+          partner_id: partnerId,
           mp_access_token: data.access_token,
           mp_refresh_token: data.refresh_token,
-          mp_user_id: data.user_id.toString()
-      })
-      .eq('id', barId);
+          mp_user_id: data.user_id?.toString()
+      }, { onConflict: 'partner_id' });
 
-    if (error) throw error;
+    if (secretsError) throw secretsError;
 
-    return new Response("Mercado Pago vinculado com sucesso! Pode fechar esta aba.", {
-      headers: { ...corsHeaders, 'Content-Type': 'text/html' },
+    // Atualizar status de conexão na tabela pública de parceiros
+    const { error: partnerError } = await supabaseClient
+      .from('partners')
+      .update({ mp_connected: true })
+      .eq('id', partnerId);
+
+    if (partnerError) throw partnerError;
+
+    return new Response("Mercado Pago vinculado com sucesso! Pode fechar esta aba e voltar ao painel.", {
+      headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' },
     });
 
   } catch (error) {

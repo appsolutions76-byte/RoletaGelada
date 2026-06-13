@@ -23,10 +23,10 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // 1. Fetch Prize, Bar and Platform Settings
+    // 1. Fetch Prize, Partner and Platform Settings
     const { data: prize, error: prizeError } = await supabaseClient
       .from('prizes')
-      .select('*, bars(*)')
+      .select('*, partners(*)')
       .eq('id', prize_id)
       .single()
 
@@ -40,15 +40,22 @@ serve(async (req) => {
       
     if (settingsError || !settings) throw new Error('Settings not found')
 
-    // 2. Calculate Total Bet (Reverted to base bet as per new requirement)
+    // 2. Fetch Partner Secrets
+    const { data: secrets, error: secretsError } = await supabaseClient
+      .from('partner_secrets')
+      .select('mp_access_token')
+      .eq('partner_id', prize.partner_id)
+      .maybeSingle()
+
+    // 3. Calculate Total Bet
     const totalBetAmount = Number(prize.bet_amount);
 
-    // 3. Create Round
+    // 4. Create Round
     const { data: round, error: roundError } = await supabaseClient
       .from('rounds')
       .insert([{ 
           prize_id, 
-          bar_id: prize.bar_id, // Novo campo corrigindo o bug do Conta Real
+          partner_id: prize.partner_id,
           player_name: player_name || 'Anônimo', 
           bet_amount: totalBetAmount, 
           status: 'pending' 
@@ -58,31 +65,27 @@ serve(async (req) => {
 
     if (roundError) throw roundError;
 
-    // 4. Split Math
+    // 5. Split Math
     const mpAccessToken = Deno.env.get('MP_ACCESS_TOKEN'); // Platform token
     
     // Calculate application_fee based on the ORIGINAL bet_amount and platform fee percentage
     const platformFee = Number((totalBetAmount * settings.platform_fee_percentage).toFixed(2));
     
-    // O resto vai pro dono do bar (O MP faz isso automaticamente ao passarmos a application_fee)
-    // O pagamento é feito usando o token do Bar (Marketplace payment)
-    // O pagamento é feito usando o token do Bar (Marketplace payment)
-    let barToken = prize.bars.mp_access_token;
+    let partnerToken = secrets?.mp_access_token;
 
-    if (!barToken || barToken.trim() === '') {
-      return new Response(JSON.stringify({ error: 'Este bar não configurou o Mercado Pago ainda.' }), {
+    if (!partnerToken || partnerToken.trim() === '') {
+      return new Response(JSON.stringify({ error: 'Este parceiro não configurou o Mercado Pago ainda.' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    barToken = barToken.trim();
+    partnerToken = partnerToken.trim();
 
-    // 4. Mock para Testes (Se o usuário digitar 'teste', 'test-token', ou um token muito curto)
-    const isMockToken = barToken.toUpperCase().includes('TESTE') || barToken.toUpperCase().includes('TEST-TOKEN') || barToken.length < 15;
+    // 6. Mock para Testes
+    const isMockToken = partnerToken.toUpperCase().includes('TESTE') || partnerToken.toUpperCase().includes('TEST-TOKEN') || partnerToken.length < 15;
     
     if (isMockToken) {
-      // Simular um atraso da API
       await new Promise(resolve => setTimeout(resolve, 1000));
       return new Response(JSON.stringify({ 
         round_id: round.id,
@@ -99,13 +102,13 @@ serve(async (req) => {
       payer: { email: "cliente@roletagelada.com" },
       external_reference: round.id,
       notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mp-webhook`,
-      application_fee: platformFee // Aqui cobramos a taxa gota a gota!
+      application_fee: platformFee // Taxa da plataforma
     };
 
     const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${barToken}`, // <- IMPORTANTE: Pix gerado no token do Bar!
+        'Authorization': `Bearer ${partnerToken}`, // Token do Parceiro
         'Content-Type': 'application/json',
         'X-Idempotency-Key': crypto.randomUUID()
       },

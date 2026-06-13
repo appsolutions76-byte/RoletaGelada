@@ -21,13 +21,13 @@
                 <p class="text-gray-400 text-sm">Apenas appsolutions76@gmail.com</p>
             </div>
             
-            <div class="space-y-4">
-                <input type="email" id="auth-email" value="appsolutions76@gmail.com" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none" disabled>
-                <input type="password" id="auth-password" placeholder="Sua Senha" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none">
+            <form onsubmit="event.preventDefault(); handleLogin();" class="space-y-4">
+                <input type="email" id="auth-email" value="appsolutions76@gmail.com" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none" readonly autocomplete="username">
+                <input type="password" id="auth-password" placeholder="Sua Senha" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none" autocomplete="current-password">
                 
-                <button onclick="handleLogin()" class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-black py-3 rounded-lg hover:opacity-90">Entrar no Cofre</button>
-                <button onclick="handleSignUpMaster()" class="w-full text-xs text-gray-500 underline text-center block pt-2">Criar minha senha de dono (1º acesso)</button>
-            </div>
+                <button type="submit" class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-black py-3 rounded-lg hover:opacity-90">Entrar no Cofre</button>
+                <button type="button" onclick="handleSignUpMaster()" class="w-full text-xs text-gray-500 underline text-center block pt-2">Criar minha senha de dono (1º acesso)</button>
+            </form>
         </div>
     </div>
 
@@ -44,8 +44,8 @@
         <main class="max-w-6xl mx-auto p-6 space-y-8">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div class="bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-xl">
-                    <h3 class="text-gray-400 font-bold mb-2">Bares Parceiros</h3>
-                    <p id="kpi-bars" class="text-4xl font-black text-white">0</p>
+                    <h3 class="text-gray-400 font-bold mb-2">Parceiros Ativos</h3>
+                    <p id="kpi-partners" class="text-4xl font-black text-white">0</p>
                 </div>
                 <div class="bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-xl">
                     <h3 class="text-gray-400 font-bold mb-2">Total de Giros</h3>
@@ -78,7 +78,7 @@
                 </div>
 
                 <div class="bg-gray-800 p-6 rounded-2xl border border-gray-700 lg:col-span-2">
-                    <h2 class="text-2xl font-bold mb-6 text-white">🏪 Bares Parceiros</h2>
+                    <h2 class="text-2xl font-bold mb-6 text-white">🏪 Parceiros Registrados</h2>
                     <table class="w-full text-left">
                         <thead class="text-gray-400 text-sm border-b border-gray-700">
                             <tr class="pb-3">
@@ -87,7 +87,7 @@
                                 <th class="pb-3 text-right">Ações</th>
                             </tr>
                         </thead>
-                        <tbody id="table-bars" class="text-sm"></tbody>
+                        <tbody id="table-partners" class="text-sm"></tbody>
                     </table>
                 </div>
             </div>
@@ -120,8 +120,9 @@
         async function handleLogin() {
             if (!supabaseClient) return alert("Erro crítico de conexão: O banco de dados não carregou. Desative adblockers e atualize a página.");
             const p = document.getElementById('auth-password').value;
+            if (!p) return alert("Por favor, preencha a senha para acessar o cofre.");
             const { error } = await supabaseClient.auth.signInWithPassword({ email: 'appsolutions76@gmail.com', password: p });
-            if (error) alert(error.message);
+            if (error) alert("Falha no login: " + error.message);
         }
 
         async function handleSignUpMaster() {
@@ -154,15 +155,15 @@
                 document.getElementById('input-markup').value = settings.markup_multiplier.toFixed(2);
             }
 
-            const { data: bars } = await supabaseClient.from('bars').select('*');
-            document.getElementById('kpi-bars').innerText = bars.length;
-            const tbody = document.getElementById('table-bars'); tbody.innerHTML = '';
-            bars.forEach(b => {
-                const mp = b.mp_access_token ? "✅" : "❌";
-                const isMaster = b.name.toUpperCase().includes('MASTER');
-                const delBtn = isMaster ? '' : `<button onclick="deletePartner('${b.id}', '${b.name}')" class="text-red-500 hover:text-red-400 text-lg ml-auto block" title="Excluir Parceiro">🗑️</button>`;
+            const { data: partners } = await supabaseClient.from('partners').select('*');
+            document.getElementById('kpi-partners').innerText = partners.length;
+            const tbody = document.getElementById('table-partners'); tbody.innerHTML = '';
+            partners.forEach(p => {
+                const mp = p.mp_connected ? "✅" : "❌";
+                const isMaster = p.name.toUpperCase().includes('MASTER');
+                const delBtn = isMaster ? '' : `<button onclick="deletePartner('${p.id}', '${p.name}')" class="text-red-500 hover:text-red-400 text-lg ml-auto block" title="Excluir Parceiro">🗑️</button>`;
                 tbody.innerHTML += `<tr class="border-b border-gray-700/50">
-                    <td class="py-4 font-bold">${b.name}</td>
+                    <td class="py-4 font-bold">${p.name}</td>
                     <td class="py-4">${mp}</td>
                     <td class="py-4 text-right">${delBtn}</td>
                 </tr>`;
@@ -206,10 +207,10 @@
             return data;
         }
 
-        async function deletePartner(barId, barName) {
-            if(!confirm(`Tem certeza absoluta que deseja EXCLUIR o parceiro "${barName}"? Isso apagará todas as rodadas e prêmios dele. Esta ação não pode ser desfeita.`)) return;
+        async function deletePartner(partnerId, partnerName) {
+            if(!confirm(`Tem certeza absoluta que deseja EXCLUIR o parceiro "${partnerName}"? Isso apagará todas as rodadas e prêmios dele. Esta ação não pode ser desfeita.`)) return;
             try {
-                await sfetchAdmin('delete_partner', { bar_id: barId });
+                await sfetchAdmin('delete_partner', { partner_id: partnerId });
                 alert("Parceiro excluído com sucesso.");
                 loadMasterData();
             } catch(e) { alert("Erro: " + e.message); }
