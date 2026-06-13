@@ -32,7 +32,11 @@
 
         function showQrCode() {
             if (!window.PARTNER_ID) return alert("Erro: ID do Parceiro não encontrado.");
+            const partnerName = document.getElementById('nav-partner-name').innerText;
             const appUrl = `${window.location.origin}/index.html?partner=${window.PARTNER_ID}`;
+            
+            document.getElementById('modal-qrcode-title').innerText = partnerName;
+            
             const container = document.getElementById('partner-qr-container');
             container.innerHTML = '';
             new QRCode(container, { text: appUrl, width: 250, height: 250 });
@@ -99,9 +103,9 @@
             <div id="modal-qrcode" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
                 <div class="bg-slate-800 p-8 rounded-2xl max-w-sm w-full border border-gray-700 shadow-2xl text-center relative">
                     <button onclick="document.getElementById('modal-qrcode').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-white font-bold text-xl">&times;</button>
-                    <h2 class="text-2xl font-black text-white mb-2">Sua Roleta</h2>
-                    <p class="text-gray-400 text-sm mb-6">Deixe este QR Code visível para seus clientes escanearem e jogarem.</p>
-                    <div id="partner-qr-container" class="bg-white p-4 rounded-xl inline-block mb-6"></div>
+                    <h2 id="modal-qrcode-title" class="text-3xl font-black text-cyan-400 mb-2 uppercase tracking-wide">Sua Roleta</h2>
+                    <p class="text-gray-400 text-sm mb-6 font-semibold">Jogue a roleta e ganhe prêmios no nosso bar!</p>
+                    <div id="partner-qr-container" class="bg-white p-4 rounded-xl inline-block mb-6 border-4 border-slate-700 shadow-lg"></div>
                     <button onclick="copyAppUrl()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-lg transition mb-2">Copiar Link</button>
                 </div>
             </div>
