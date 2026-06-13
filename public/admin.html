@@ -275,16 +275,16 @@
             if (window.location.protocol === 'file:') return alert("ERRO: Você abriu o arquivo dando dois cliques (file://). O banco de dados só funciona se você rodar num servidor (Live Server) ou na Vercel!");
             if (!supabaseClient) return alert("Erro crítico de conexão: O banco de dados não carregou. Desative adblockers e atualize a página.");
             try {
-                const n = document.getElementById('auth-bar-name').value;
+                const n = document.getElementById('auth-partner-name').value;
                 const e = document.getElementById('auth-email').value;
                 const p = document.getElementById('auth-password').value;
                 
-                if(!n) return showError("Preencha o Nome do Bar para cadastrar.");
+                if(!n) return showError("Preencha o Nome do Negócio para cadastrar.");
 
                 const { error } = await supabaseClient.auth.signUp({ 
                     email: e, 
                     password: p,
-                    options: { data: { bar_name: n } }
+                    options: { data: { partner_name: n } }
                 });
                 
                 if (error) {
@@ -372,10 +372,10 @@
                 const platformFeeTotal = rev * window.FEE;
                 const netRev = rev - platformFeeTotal - totalConsolation;
 
-                document.getElementById('kpi-bar-net').innerText = `R$ ${netRev.toFixed(2)}`;
-                const consEl = document.getElementById('kpi-bar-consolation');
+                document.getElementById('kpi-partner-net').innerText = `R$ ${netRev.toFixed(2)}`;
+                const consEl = document.getElementById('kpi-partner-consolation');
                 if(consEl) consEl.innerText = `R$ ${totalConsolation.toFixed(2)}`;
-                document.getElementById('kpi-bar-spins').innerText = totalSpins;
+                document.getElementById('kpi-partner-spins').innerText = totalSpins;
 
                 // Realtime Sync para produção (Filtro no client-side para evitar falhas de Replica Identity)
                 if (!window.realtimeSubscribed) {
