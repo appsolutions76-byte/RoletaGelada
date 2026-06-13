@@ -318,7 +318,9 @@
                 const { data: partner, error: partnerError } = await supabaseClient.from('partners').select('*').eq('id', window.PARTNER_ID).maybeSingle();
                 if(partnerError) throw new Error("Falha ao ler tabela partners: " + partnerError.message);
                 if(!partner) {
-                    alert("⚠️ ERRO GRAVE: Sua conta de Parceiro não foi encontrada no banco de dados. \nID Buscado: " + window.PARTNER_ID + "\nClique em Sair e tente logar novamente.");
+                    alert("⚠️ ERRO GRAVE: Sua conta de Parceiro não foi encontrada no banco de dados. \nDeslogando automaticamente para limpeza do sistema...");
+                    await logout();
+                    window.location.reload();
                     return;
                 }
 
