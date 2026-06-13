@@ -318,10 +318,11 @@
 
                 // Polling simplificado para verificar se foi pago (para Pix Real)
                 if(!data.qr_code.startsWith('MOCK')) {
-                    setInterval(async () => {
+                    state.pollingInterval = setInterval(async () => {
                         try {
                             const rounds = await sfetch(`/rest/v1/rounds?id=eq.${state.roundId}&select=status`);
                             if(rounds && rounds[0] && rounds[0].status === 'paid') {
+                                clearInterval(state.pollingInterval);
                                 startRoulette();
                             }
                         } catch(e){}

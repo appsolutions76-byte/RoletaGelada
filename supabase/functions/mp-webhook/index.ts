@@ -49,16 +49,41 @@ serve(async (req) => {
           const { data: round } = await supabaseClient.from('rounds').select('*, prizes(*)').eq('id', roundId).single();
           
           if (round && round.status === 'pending') {
-              // 1. Marca como pago
-              await supabaseClient.from('rounds').update({status: 'paid'}).eq('id', round.id);
-              
-              // 2. Incrementa o cofre do prêmio
-              const { data: vault } = await supabaseClient.from('vaults').select('*').eq('prize_id', round.prize_id).single();
-              
-              if (vault) {
-                 await supabaseClient.from('vaults').update({accumulated_balance: Number(vault.accumulated_balance) + Number(round.bet_amount)}).eq('id', vault.id);
+              // Pegar o id do pagamento
+              let paymentId = url.searchParams.get("data.id") || url.searchParams.get("id");
+              if (!paymentId && body.data && body.data.id) paymentId = body.data.id;
+
+              let isPaid = false;
+
+              if (paymentId) {
+                  // Obter token do parceiro para consultar API
+                  const { data: secret } = await supabaseClient.from('partner_secrets').select('mp_access_token').eq('partner_id', round.partner_id).single();
+                  if (secret && secret.mp_access_token) {
+                      const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+                          headers: { Authorization: `Bearer ${secret.mp_access_token}` }
+                      });
+                      const mpData = await mpRes.json();
+                      if (mpData.status === 'approved') {
+                          isPaid = true;
+                      }
+                  }
               } else {
-                 await supabaseClient.from('vaults').insert([{prize_id: round.prize_id, accumulated_balance: Number(round.bet_amount)}]);
+                  // Fallback para mock/teste do botão amarelo
+                  isPaid = true;
+              }
+
+              if (isPaid) {
+                  // 1. Marca como pago
+                  await supabaseClient.from('rounds').update({status: 'paid'}).eq('id', round.id);
+                  
+                  // 2. Incrementa o cofre do prêmio
+                  const { data: vault } = await supabaseClient.from('vaults').select('*').eq('prize_id', round.prize_id).single();
+                  
+                  if (vault) {
+                     await supabaseClient.from('vaults').update({accumulated_balance: Number(vault.accumulated_balance) + Number(round.bet_amount)}).eq('id', vault.id);
+                  } else {
+                     await supabaseClient.from('vaults').insert([{prize_id: round.prize_id, accumulated_balance: Number(round.bet_amount)}]);
+                  }
               }
           }
       }
