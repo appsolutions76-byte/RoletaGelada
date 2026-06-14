@@ -271,13 +271,8 @@
                     window.CONSOLATION_FEE = parseFloat(partner.consolation_fee) || 0;
                     applyTheme(partner.theme_color, partner.theme_background, partner.theme_logo_url);
 
-                    if (partner.is_active === false) {
-                        document.getElementById('step-list').classList.add('hidden');
-                        document.getElementById('step-closed').classList.remove('hidden');
-                        return;
-                    }
-
-                    // Check localStorage for pending rounds
+                    // 1. Check localStorage for pending rounds FIRST
+                    let isResuming = false;
                     const pendingStr = localStorage.getItem('rg_pending_round');
                     if (pendingStr) {
                         try {
@@ -289,6 +284,7 @@
                                     state.prizeName = pending.prizeName;
                                     localStorage.removeItem('rg_pending_round');
                                     document.getElementById('step-list').classList.add('hidden');
+                                    isResuming = true;
                                     startRoulette();
                                     return; 
                                 } else if (rounds[0].status === 'pending') {
@@ -313,6 +309,7 @@
                                             }
                                         } catch(e){}
                                     }, 3000);
+                                    isResuming = true;
                                     return;
                                 } else {
                                     localStorage.removeItem('rg_pending_round');
@@ -323,6 +320,13 @@
                         } catch(e) {
                             localStorage.removeItem('rg_pending_round');
                         }
+                    }
+
+                    // 2. Se não estiver retomando jogada, bloqueia caso o bar esteja fechado
+                    if (!isResuming && partner.is_active === false) {
+                        document.getElementById('step-list').classList.add('hidden');
+                        document.getElementById('step-closed').classList.remove('hidden');
+                        return;
                     }
                 } else {
                     document.getElementById('partner-name').innerText = "Parceiro não encontrado.";
