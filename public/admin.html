@@ -2,8 +2,14 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Painel do Parceiro | AppSolutions</title>
+    <link rel="manifest" href="manifest.json">
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js');
+        }
+    </script>
     <script>
         // Declaramos variáveis globais cedo
         window.PARTNER_ID = null;
@@ -81,6 +87,18 @@
         </nav>
 
         <main class="max-w-4xl mx-auto p-6 mt-6 space-y-8">
+            
+            <!-- Status do Estabelecimento -->
+            <div class="bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-700 flex justify-between items-center">
+                <div>
+                    <h2 class="text-2xl font-bold text-white mb-1" id="status-title">Status: Carregando...</h2>
+                    <p class="text-sm text-gray-400">Controle se os clientes podem jogar na roleta.</p>
+                </div>
+                <button id="btn-toggle-status" onclick="toggleActiveStatus()" class="px-6 py-3 rounded-xl font-black text-white transition shadow-lg w-48">
+                    ...
+                </button>
+            </div>
+
             <!-- KPIs do Parceiro -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div class="bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-700">
@@ -376,6 +394,9 @@
 
                 document.getElementById('nav-partner-name').innerText = partner.name;
                 
+                window.IS_ACTIVE = partner.is_active !== false; // defaults to true
+                updateStatusUI();
+
                 if (partner.minor_prizes !== undefined && partner.minor_prizes !== null) document.getElementById('minor-prizes-input').value = partner.minor_prizes;
                 if (partner.consolation_fee !== undefined && partner.consolation_fee !== null) document.getElementById('consolation-fee-input').value = partner.consolation_fee;
                 if (partner.theme_color) document.getElementById('theme-color-input').value = partner.theme_color;
@@ -450,6 +471,33 @@
             } catch (err) {
                 console.error("Erro Crítico no loadDashboard:", err);
                 alert("Ocorreu um erro ao carregar o painel. Se isso persistir, recarregue a página. Erro: " + err.message);
+            }
+        }
+
+        async function toggleActiveStatus() {
+            if (!window.PARTNER_ID) return;
+            const newStatus = !window.IS_ACTIVE;
+            const { error } = await supabaseClient.from('partners').update({ is_active: newStatus }).eq('id', window.PARTNER_ID);
+            if (error) return alert("Erro ao mudar status: " + error.message);
+            window.IS_ACTIVE = newStatus;
+            updateStatusUI();
+        }
+
+        function updateStatusUI() {
+            const title = document.getElementById('status-title');
+            const btn = document.getElementById('btn-toggle-status');
+            if (window.IS_ACTIVE) {
+                title.innerText = "Status: ABERTO ✅";
+                title.classList.remove('text-red-400');
+                title.classList.add('text-green-400');
+                btn.innerText = "FECHAR ROLETA";
+                btn.className = "px-6 py-3 rounded-xl font-black text-white transition shadow-lg w-48 bg-red-600 hover:bg-red-500";
+            } else {
+                title.innerText = "Status: FECHADO 😴";
+                title.classList.remove('text-green-400');
+                title.classList.add('text-red-400');
+                btn.innerText = "ABRIR ROLETA";
+                btn.className = "px-6 py-3 rounded-xl font-black text-white transition shadow-lg w-48 bg-green-600 hover:bg-green-500";
             }
         }
 

@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Roleta Gelada | AppSolutions76</title>
+    <link rel="manifest" href="manifest.json">
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js');
+        }
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     
     <style>
@@ -98,6 +104,13 @@
                 Compartilhar a Roleta 📱
             </button>
         </header>
+
+        <!-- Etapa 0: Fechado -->
+        <div id="step-closed" class="hidden text-center mt-10">
+            <span class="text-6xl mb-4 block">😴</span>
+            <h2 class="text-2xl font-black text-white mb-2">Estamos Fechados!</h2>
+            <p class="text-gray-400">A roleta foi pausada pelo estabelecimento. Volte mais tarde para tentar a sorte.</p>
+        </div>
 
         <!-- Etapa 1: Lista -->
         <div id="step-list">
@@ -250,13 +263,67 @@
                 let prizes = [];
                 let minorPrizes = ["Amendoim", "Shot de Cachaça", "IHHH", "GIRE +1", "NADA"];
 
-                const partners = await sfetch(`/rest/v1/partners?id=eq.${PARTNER_ID}&select=name,minor_prizes,consolation_fee,theme_color,theme_background,theme_logo_url`);
+                const partners = await sfetch(`/rest/v1/partners?id=eq.${PARTNER_ID}&select=name,minor_prizes,consolation_fee,theme_color,theme_background,theme_logo_url,is_active`);
                 if(partners && partners.length > 0) {
                     const partner = partners[0];
                     document.getElementById('partner-name').innerText = partner.name;
                     if(partner.minor_prizes) minorPrizes = partner.minor_prizes.split(',').map(s => s.trim());
                     window.CONSOLATION_FEE = parseFloat(partner.consolation_fee) || 0;
                     applyTheme(partner.theme_color, partner.theme_background, partner.theme_logo_url);
+
+                    if (partner.is_active === false) {
+                        document.getElementById('step-list').classList.add('hidden');
+                        document.getElementById('step-closed').classList.remove('hidden');
+                        return;
+                    }
+
+                    // Check localStorage for pending rounds
+                    const pendingStr = localStorage.getItem('rg_pending_round');
+                    if (pendingStr) {
+                        try {
+                            const pending = JSON.parse(pendingStr);
+                            const rounds = await sfetch(`/rest/v1/rounds?id=eq.${pending.roundId}&select=status`);
+                            if (rounds && rounds[0]) {
+                                if (rounds[0].status === 'paid') {
+                                    state.roundId = pending.roundId;
+                                    state.prizeName = pending.prizeName;
+                                    localStorage.removeItem('rg_pending_round');
+                                    document.getElementById('step-list').classList.add('hidden');
+                                    startRoulette();
+                                    return; 
+                                } else if (rounds[0].status === 'pending') {
+                                    state.roundId = pending.roundId;
+                                    state.prizeName = pending.prizeName;
+                                    state.prizeBet = pending.prizeBet;
+                                    document.getElementById('step-list').classList.add('hidden');
+                                    document.getElementById('step-pay').classList.remove('hidden');
+                                    document.getElementById('lbl-prize').innerText = pending.prizeName;
+                                    document.getElementById('lbl-bet').innerText = pending.prizeBet.toFixed(2);
+                                    document.getElementById('btn-gerar-pix').classList.add('hidden');
+                                    document.getElementById('pix-area').classList.remove('hidden');
+                                    document.getElementById('qr-container').innerHTML = '<p class="text-sm text-gray-400 mt-4 text-center">Aguardando pagamento no app do seu banco...</p>';
+                                    
+                                    state.pollingInterval = setInterval(async () => {
+                                        try {
+                                            const r = await sfetch(`/rest/v1/rounds?id=eq.${pending.roundId}&select=status`);
+                                            if(r && r[0] && r[0].status === 'paid') {
+                                                clearInterval(state.pollingInterval);
+                                                localStorage.removeItem('rg_pending_round');
+                                                startRoulette();
+                                            }
+                                        } catch(e){}
+                                    }, 3000);
+                                    return;
+                                } else {
+                                    localStorage.removeItem('rg_pending_round');
+                                }
+                            } else {
+                                localStorage.removeItem('rg_pending_round');
+                            }
+                        } catch(e) {
+                            localStorage.removeItem('rg_pending_round');
+                        }
+                    }
                 } else {
                     document.getElementById('partner-name').innerText = "Parceiro não encontrado.";
                     document.getElementById('step-list').innerHTML = "<p class='text-center text-red-500 font-bold mt-10'>Parceiro inativo ou inexistente no banco de dados.</p>";
@@ -322,6 +389,13 @@
             try {
                 const data = await sfetch(`/functions/v1/create-pix`, 'POST', { prize_id: state.prizeId });
                 state.roundId = data.round_id;
+
+                localStorage.setItem('rg_pending_round', JSON.stringify({
+                    roundId: state.roundId,
+                    prizeId: state.prizeId,
+                    prizeName: state.prizeName,
+                    prizeBet: state.prizeBet
+                }));
                 
                 btn.classList.add('hidden');
                 document.getElementById('pix-area').classList.remove('hidden');

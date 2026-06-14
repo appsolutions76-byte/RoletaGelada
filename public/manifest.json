@@ -1,0 +1,16 @@
+{
+  "name": "Roleta Gelada",
+  "short_name": "Roleta",
+  "description": "Gire a roleta e ganhe prêmios!",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/876/876611.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
