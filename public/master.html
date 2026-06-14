@@ -2,8 +2,14 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Master Admin | AppSolutions</title>
+    <link rel="manifest" href="manifest.json">
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js');
+        }
+    </script>
     <script>
         window.settingsId = null;
     </script>
@@ -34,7 +40,7 @@
     <!-- PAINEL PRINCIPAL -->
     <div id="dashboard-screen" class="hidden w-full">
         <nav class="bg-black/50 p-4 border-b border-gray-800 flex justify-between items-center sticky top-0 z-50">
-            <h1 class="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500">Roleta Gelada - SUPER ADMIN</h1>
+            <h1 class="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500">Roleta Gelada - SUPER MASTER</h1>
             <div class="flex gap-4 items-center">
                 <button onclick="resetAllStats()" class="bg-red-600/20 text-red-500 border border-red-500/30 px-3 py-1 rounded-lg text-sm hover:bg-red-600/30 font-bold transition">Zerar Estatísticas 🧹</button>
                 <button onclick="logout()" class="text-sm font-bold text-gray-400 underline hover:text-white">Sair 🔒</button>
