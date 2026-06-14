@@ -397,11 +397,14 @@
                 window.IS_ACTIVE = partner.is_active !== false; // defaults to true
                 updateStatusUI();
 
-                if (partner.minor_prizes !== undefined && partner.minor_prizes !== null) document.getElementById('minor-prizes-input').value = partner.minor_prizes;
-                if (partner.consolation_fee !== undefined && partner.consolation_fee !== null) document.getElementById('consolation-fee-input').value = partner.consolation_fee;
-                if (partner.theme_color) document.getElementById('theme-color-input').value = partner.theme_color;
-                if (partner.theme_background) document.getElementById('theme-bg-input').value = partner.theme_background;
-                if (partner.theme_logo_url) document.getElementById('theme-logo-input').value = partner.theme_logo_url;
+                if (!window.loadedInitialPartnerSettings) {
+                    if (partner.minor_prizes !== undefined && partner.minor_prizes !== null) document.getElementById('minor-prizes-input').value = partner.minor_prizes;
+                    if (partner.consolation_fee !== undefined && partner.consolation_fee !== null) document.getElementById('consolation-fee-input').value = partner.consolation_fee;
+                    if (partner.theme_color) document.getElementById('theme-color-input').value = partner.theme_color;
+                    if (partner.theme_background) document.getElementById('theme-bg-input').value = partner.theme_background;
+                    if (partner.theme_logo_url) document.getElementById('theme-logo-input').value = partner.theme_logo_url;
+                    window.loadedInitialPartnerSettings = true;
+                }
 
                 if (partner.mp_connected) {
                     document.getElementById('mp-status').innerHTML = "✅ Conectado ao Mercado Pago";
