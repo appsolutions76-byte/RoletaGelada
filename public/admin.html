@@ -22,17 +22,16 @@
             prompt(`Link Oficial: ${partnerName} gerado com sucesso!\n\nCopie o link abaixo para abrir no celular e rodar o aplicativo:`, appUrl);
         }
 
-        function shareAppUrl() {
-            if (!window.PARTNER_ID) return alert("Erro: ID do Parceiro não encontrado.");
-            const appUrl = `${window.location.origin}/index.html?partner=${window.PARTNER_ID}`;
+        function shareInviteUrl() {
+            const appUrl = `${window.location.origin}/admin.html`;
             if (navigator.share) {
                 navigator.share({
                     title: 'Roleta Gelada',
-                    text: 'Gire a roleta e ganhe prêmios!',
+                    text: 'Quer ter uma Roleta Gelada no seu bar e aumentar o faturamento? Cadastre-se como parceiro!',
                     url: appUrl
                 }).catch(console.error);
             } else {
-                copyAppUrl();
+                prompt("Copie o link abaixo para convidar novos parceiros:", appUrl);
             }
         }
 
@@ -81,7 +80,7 @@
         <nav class="bg-black/50 p-4 border-b border-gray-800 flex justify-between items-center sticky top-0 z-50">
             <h1 class="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500" id="nav-partner-name">Carregando...</h1>
             <div class="flex items-center gap-4">
-                <button onclick="shareAppUrl()" class="bg-green-600/20 text-green-400 border border-green-500/30 px-3 py-1 rounded-lg text-sm hover:bg-green-600/30 font-bold transition">Compartilhar 📱</button>
+                <button onclick="shareInviteUrl()" class="bg-green-600/20 text-green-400 border border-green-500/30 px-3 py-1 rounded-lg text-sm hover:bg-green-600/30 font-bold transition">Indicar Parceiro 🤝</button>
                 <button onclick="showQrCode()" class="bg-blue-600/20 text-blue-400 border border-blue-500/30 px-3 py-1 rounded-lg text-sm hover:bg-blue-600/30 font-bold transition">Ver QR Code da Roleta</button>
                 <button onclick="logout()" class="text-sm font-bold text-gray-400 underline ml-2">Sair 🔒</button>
         </nav>
