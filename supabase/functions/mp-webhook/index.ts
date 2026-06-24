@@ -83,13 +83,18 @@ serve(async (req) => {
                   
                   // Se retornou algo, significa que fomos nós que alteramos de pending para paid
                   if (updatedRounds && updatedRounds.length > 0) {
-                      // 2. Incrementa o cofre do prêmio
+                      // 2. Incrementa o cofre do prêmio com a parte do parceiro (ex: 70% do bet_amount)
+                      const { data: settings } = await supabaseClient.from('platform_settings').select('platform_fee_percentage').limit(1).single();
+                      const platformFee = settings && settings.platform_fee_percentage ? Number(settings.platform_fee_percentage) : 0;
+                      const partnerShare = 1 - platformFee;
+                      const amountForVault = Number(round.bet_amount) * partnerShare;
+
                       const { data: vault } = await supabaseClient.from('vaults').select('*').eq('prize_id', round.prize_id).single();
                       
                       if (vault) {
-                         await supabaseClient.from('vaults').update({accumulated_balance: Number(vault.accumulated_balance) + Number(round.bet_amount)}).eq('id', vault.id);
+                         await supabaseClient.from('vaults').update({accumulated_balance: Number(vault.accumulated_balance) + amountForVault}).eq('id', vault.id);
                       } else {
-                         await supabaseClient.from('vaults').insert([{prize_id: round.prize_id, accumulated_balance: Number(round.bet_amount)}]);
+                         await supabaseClient.from('vaults').insert([{prize_id: round.prize_id, accumulated_balance: amountForVault}]);
                       }
                   }
               }
