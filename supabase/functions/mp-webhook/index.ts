@@ -73,16 +73,24 @@ serve(async (req) => {
               }
 
               if (isPaid) {
-                  // 1. Marca como pago
-                  await supabaseClient.from('rounds').update({status: 'paid'}).eq('id', round.id);
+                  // 1. Marca como pago atomicamente para evitar que webhooks duplicados creditem o cofre 2x
+                  const { data: updatedRounds } = await supabaseClient
+                      .from('rounds')
+                      .update({status: 'paid'})
+                      .eq('id', round.id)
+                      .eq('status', 'pending')
+                      .select();
                   
-                  // 2. Incrementa o cofre do prêmio
-                  const { data: vault } = await supabaseClient.from('vaults').select('*').eq('prize_id', round.prize_id).single();
-                  
-                  if (vault) {
-                     await supabaseClient.from('vaults').update({accumulated_balance: Number(vault.accumulated_balance) + Number(round.bet_amount)}).eq('id', vault.id);
-                  } else {
-                     await supabaseClient.from('vaults').insert([{prize_id: round.prize_id, accumulated_balance: Number(round.bet_amount)}]);
+                  // Se retornou algo, significa que fomos nós que alteramos de pending para paid
+                  if (updatedRounds && updatedRounds.length > 0) {
+                      // 2. Incrementa o cofre do prêmio
+                      const { data: vault } = await supabaseClient.from('vaults').select('*').eq('prize_id', round.prize_id).single();
+                      
+                      if (vault) {
+                         await supabaseClient.from('vaults').update({accumulated_balance: Number(vault.accumulated_balance) + Number(round.bet_amount)}).eq('id', vault.id);
+                      } else {
+                         await supabaseClient.from('vaults').insert([{prize_id: round.prize_id, accumulated_balance: Number(round.bet_amount)}]);
+                      }
                   }
               }
           }
