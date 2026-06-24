@@ -648,6 +648,7 @@
                         
                         const isGireMais1 = minor && (minor.toUpperCase().trim() === 'GIRE +1' || minor.toUpperCase().includes('GIRE'));
                         if (isGireMais1) {
+                            try { new Audio('https://actions.google.com/sounds/v1/crowds/stadium_crowd.ogg').play(); } catch(e) {}
                             document.getElementById('result-title').innerText = "GIRE +1 !";
                             document.getElementById('result-title').style.color = "#38bdf8";
                             document.getElementById('result-desc').innerText = "Você ganhou uma rodada grátis!";
@@ -669,6 +670,7 @@
                                 btnPlayAgain.onclick = () => location.reload();
                             };
                         } else if (!isNothing) {
+                            try { new Audio('https://actions.google.com/sounds/v1/crowds/stadium_crowd.ogg').play(); } catch(e) {}
                             document.getElementById('result-title').innerText = "Prêmio Menor!";
                             document.getElementById('result-title').style.color = "#facc15";
                             document.getElementById('result-desc').innerText = `Consolação: ${minor}. Mostre no balcão!`;
@@ -691,6 +693,7 @@
                             document.getElementById('result-shortcode').innerText = "";
                         }
                     } else {
+                        try { new Audio('https://translate.google.com/translate_tts?ie=UTF-8&tl=pt-BR&client=tw-ob&q=Gooooooolllll+do+Braziiilll').play(); } catch(e) {}
                         document.getElementById('result-title').innerText = "Parabéns!";
                         document.getElementById('result-desc').innerText = `Você ganhou: ${prizeResult}. Mostre este QR ao garçom.`;
                         document.getElementById('result-qr-container').classList.remove('hidden');
