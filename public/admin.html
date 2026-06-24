@@ -411,15 +411,20 @@
                     document.getElementById('btn-connect-mp').innerText = "🔄 Reconectar Mercado Pago";
                 }
 
-                const { data: prizes } = await supabaseClient.from('prizes').select('*').eq('partner_id', window.PARTNER_ID);
+                const { data: prizes } = await supabaseClient.from('prizes').select('*, vaults(accumulated_balance)').eq('partner_id', window.PARTNER_ID);
                 const tbody = document.getElementById('table-prizes');
                 tbody.innerHTML = '';
                 if (prizes) {
                     prizes.forEach(p => {
                         const safeName = p.name.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+                        const vaultVal = p.vaults ? (Array.isArray(p.vaults) ? p.vaults[0]?.accumulated_balance : p.vaults.accumulated_balance) : 0;
+                        const vaultStr = Number(vaultVal || 0).toFixed(2);
                         tbody.innerHTML += `
                             <tr class="border-b border-gray-700/50 hover:bg-white/5 transition">
-                                <td class="p-3 font-semibold text-white">${p.name}</td>
+                                <td class="p-3 font-semibold text-white">
+                                    ${p.name}
+                                    <div class="text-[10px] text-gray-700 font-normal mt-0.5">Cofre: R$ ${vaultStr}</div>
+                                </td>
                                 <td class="p-3 text-cyan-400 font-bold">R$ ${p.bet_amount}</td>
                                 <td class="p-3 text-gray-400">R$ ${p.prize_cost}</td>
                                 <td class="p-3 text-right">
