@@ -65,7 +65,7 @@ serve(async (req) => {
         if (vault) {
           await supabaseClient
             .from('vaults')
-            .update({ accumulated_balance: currentBalance - targetBalance }) // Reseta pagando o custo e lucro
+            .update({ accumulated_balance: 0 }) // Zera o cofre completamente
             .eq('id', vault.id);
         } else {
           await supabaseClient
