@@ -27,7 +27,7 @@ serve(async (req) => {
 
     if (roundError || !round) throw new Error('Round not found')
     // Apenas para testes, vamos permitir girar mesmo pendente se for chamado direto.
-    // if (round.status !== 'paid') throw new Error('Not paid')
+    if (round.status !== 'paid') throw new Error('Not paid')
 
     const { data: settings } = await supabaseClient.from('platform_settings').select('*').single()
     

@@ -69,7 +69,14 @@ serve(async (req) => {
                   }
               } else {
                   // Fallback para mock/teste do botão amarelo
-                  isPaid = true;
+                  // SÓ APROVA se o parceiro tiver um token MOCK configurado!
+                  const { data: secret } = await supabaseClient.from('partner_secrets').select('mp_access_token').eq('partner_id', round.partner_id).single();
+                  if (secret && secret.mp_access_token) {
+                      const t = secret.mp_access_token.toUpperCase();
+                      if (t.includes('TESTE') || t.includes('TEST-TOKEN') || t.length < 15) {
+                          isPaid = true;
+                      }
+                  }
               }
 
               if (isPaid) {
