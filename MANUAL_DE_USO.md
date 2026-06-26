@@ -20,7 +20,7 @@ Para que o dinheiro dos clientes caia direto na sua conta, é obrigatório vincu
 ### 3. Personalizando o Aplicativo
 Deixe a Roleta com a cara do seu negócio!
 1. Vá em **Personalização do App Cliente**.
-2. **Cor Principal:** Escolha a cor que mais combina com seu bar.
+2. **Cor Principal:** Escolha a cor que mais combina com seu estabelecimento.
 3. **URL do Fundo / Logo:** Cole os links de imagens hospedadas na internet para personalizar o fundo e a logomarca da tela do cliente.
 4. Clique em **Salvar Personalização**.
 
@@ -61,10 +61,10 @@ Quando um cliente ganha, ele vai até o balcão (ou chama o garçom) com a tela 
 Jogar na Roleta Gelada é rápido e fácil! Siga os passos:
 
 ### 1. Acessando o Jogo
-- Aponte a câmera do seu celular para o **QR Code** disponível no bar (nas mesas, tótens ou no balcão) ou clique no link enviado pelo estabelecimento.
+- Aponte a câmera do seu celular para o **QR Code** disponível no estabelecimento (nas mesas, tótens ou no balcão) ou clique no link enviado pelo estabelecimento.
 
 ### 2. Escolhendo o Prêmio
-- Ao abrir o app, você verá os prêmios disponíveis no bar e o valor da aposta de cada um.
+- Ao abrir o app, você verá os prêmios disponíveis no estabelecimento e o valor da aposta de cada um.
 - Selecione o prêmio que deseja tentar ganhar.
 
 ### 3. Pagando para Girar
@@ -82,7 +82,7 @@ Jogar na Roleta Gelada é rápido e fácil! Siga os passos:
 Seja o prêmio principal ou de consolação, veja como resgatar:
 1. A tela de vitória aparecerá no seu celular, mostrando o que você ganhou e um **QR Code de Resgate**.
 2. Chame o garçom ou vá ao balcão.
-3. Mostre a tela com o QR Code para o funcionário do bar. Ele fará a leitura para confirmar a validade.
+3. Mostre a tela com o QR Code para o funcionário do estabelecimento. Ele fará a leitura para confirmar a validade.
 4. Aproveite o seu prêmio! 🍻
 
 > **Importante:** Tire um "print" (captura de tela) da sua vitória mostrando o QR Code ou o código de 4 dígitos! Você pode apresentar esse print ao garçom sem problemas. O aplicativo possui um **Sistema Anti-Fraude** seguro que garante que cada prêmio só possa ser resgatado uma única vez.
