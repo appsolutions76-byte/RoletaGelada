@@ -85,4 +85,4 @@ Seja o prêmio principal ou de consolação, veja como resgatar:
 3. Mostre a tela com o QR Code para o funcionário do bar. Ele fará a leitura para confirmar a validade.
 4. Aproveite o seu prêmio! 🍻
 
-> **Importante:** Não feche a aba ou saia do navegador após ganhar até que o garçom escaneie seu prêmio. Tirar "print" da tela não funciona, pois o bar precisa escanear o código gerado no momento.
+> **Importante:** Tire um "print" (captura de tela) da sua vitória mostrando o QR Code ou o código de 4 dígitos! Você pode apresentar esse print ao garçom sem problemas. O aplicativo possui um **Sistema Anti-Fraude** seguro que garante que cada prêmio só possa ser resgatado uma única vez.
