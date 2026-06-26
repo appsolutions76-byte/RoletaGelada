@@ -65,6 +65,10 @@
                 <input type="email" id="auth-email" placeholder="E-mail" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none" autocomplete="username">
                 <input type="password" id="auth-password" placeholder="Senha" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white outline-none" autocomplete="current-password">
                 
+                <div class="flex items-start mt-2">
+                    <input type="checkbox" id="auth-terms" class="mt-1 mr-2 w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded">
+                    <label for="auth-terms" class="text-xs text-gray-400">Li e concordo com os <a href="/termos.html" target="_blank" class="text-blue-400 underline hover:text-blue-300">Termos e Condições Legais</a> para criar uma conta.</label>
+                </div>
                 <div class="flex gap-2 pt-2">
                     <button type="submit" class="w-1/2 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg transition">Entrar</button>
                     <button type="button" onclick="handleSignUp()" class="w-1/2 bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-lg transition">Criar Conta</button>
@@ -339,13 +343,16 @@
         async function handleSignUp() {
             if (window.location.protocol === 'file:') return alert("ERRO: Você abriu o arquivo dando dois cliques (file://). O banco de dados só funciona se você rodar num servidor (Live Server) ou na Vercel!");
             if (!supabaseClient) return alert("Erro crítico de conexão: O banco de dados não carregou. Desative adblockers e atualize a página.");
-            try {
-                const n = document.getElementById('auth-partner-name').value;
-                const e = document.getElementById('auth-email').value;
-                const p = document.getElementById('auth-password').value;
-                
-                if(!n) return showError("Preencha o Nome do Negócio para cadastrar.");
+            
+            const e = document.getElementById('auth-email').value;
+            const p = document.getElementById('auth-password').value;
+            const n = document.getElementById('auth-partner-name').value;
+            const terms = document.getElementById('auth-terms').checked;
+            
+            if(!e || !p || !n) return showError("Preencha todos os campos.");
+            if(!terms) return showError("Você precisa concordar com os Termos Legais para criar conta.");
 
+            try {
                 const { error } = await supabaseClient.auth.signUp({ 
                     email: e, 
                     password: p,
