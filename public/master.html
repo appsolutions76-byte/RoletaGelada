@@ -188,7 +188,12 @@
                     prizesHtml = `<div class="mt-2 space-y-1 bg-gray-900/50 p-2 rounded-lg">`;
                     partnerPrizes.forEach(pz => {
                         const vaultVal = pz.vaults ? (Array.isArray(pz.vaults) ? pz.vaults[0]?.accumulated_balance : pz.vaults.accumulated_balance) : 0;
-                        prizesHtml += `<div class="flex justify-between text-[11px] text-gray-400 border-b border-gray-800/50 pb-1 last:border-0 last:pb-0"><span>${pz.name}</span><span class="text-cyan-400 font-mono">R$ ${Number(vaultVal).toFixed(2)}</span></div>`;
+                        prizesHtml += `<div class="flex items-center text-[11px] text-gray-400 border-b border-gray-800/50 py-1 last:border-0 last:pb-0">
+                            <span class="flex-1 truncate pr-2" title="${pz.name}">${pz.name}</span>
+                            <span class="w-24 text-center whitespace-nowrap">Aposta: R$ ${Number(pz.bet_amount).toFixed(2)}</span>
+                            <span class="w-24 text-center text-gray-500 whitespace-nowrap">Custo: R$ ${Number(pz.prize_cost).toFixed(2)}</span>
+                            <span class="w-24 text-right text-cyan-400 font-mono whitespace-nowrap">Cofre: R$ ${Number(vaultVal).toFixed(2)}</span>
+                        </div>`;
                     });
                     prizesHtml += `</div>`;
                 }
