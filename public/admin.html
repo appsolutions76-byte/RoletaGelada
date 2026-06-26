@@ -83,7 +83,10 @@
     <!-- PAINEL PRINCIPAL -->
     <div id="dashboard-screen" class="hidden w-full">
         <nav class="bg-black/50 p-4 border-b border-gray-800 flex justify-between items-center sticky top-0 z-50">
-            <h1 class="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500" id="nav-partner-name">Carregando...</h1>
+            <div class="flex items-center gap-2 group cursor-pointer" onclick="editPartnerName()" title="Clique para editar o nome do seu negócio">
+                <h1 class="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500" id="nav-partner-name">Carregando...</h1>
+                <span class="text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity text-sm">✏️</span>
+            </div>
             <div class="flex items-center gap-4">
                 <button onclick="window.open('/manual_parceiro.html', '_blank')" class="bg-yellow-600/20 text-yellow-400 border border-yellow-500/30 px-3 py-1 rounded-lg text-sm hover:bg-yellow-600/30 font-bold transition">Manual de Uso 📖</button>
                 <button onclick="shareInviteUrl()" class="bg-green-600/20 text-green-400 border border-green-500/30 px-3 py-1 rounded-lg text-sm hover:bg-green-600/30 font-bold transition">Indicar Parceiro 🤝</button>
@@ -375,6 +378,22 @@
         }
 
         async function logout() { await supabaseClient.auth.signOut(); }
+
+        async function editPartnerName() {
+            if (!window.PARTNER_ID) return;
+            const currentName = document.getElementById('nav-partner-name').innerText;
+            const newName = prompt("Digite o novo nome para o seu estabelecimento:", currentName);
+            if (newName && newName.trim() !== "" && newName !== currentName) {
+                try {
+                    const { error } = await supabaseClient.from('partners').update({ name: newName.trim() }).eq('id', window.PARTNER_ID);
+                    if (error) throw error;
+                    document.getElementById('nav-partner-name').innerText = newName.trim();
+                    alert("Nome atualizado com sucesso!");
+                } catch (e) {
+                    alert("Erro ao atualizar o nome: " + e.message);
+                }
+            }
+        }
 
         function showError(msg) {
             const el = document.getElementById('auth-error');
