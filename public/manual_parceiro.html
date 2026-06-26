@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual do Parceiro - Roleta Gelada</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body { background: #0f172a; color: #e2e8f0; }
+        .prose h1, .prose h2, .prose h3 { color: #f8fafc; font-weight: bold; margin-top: 1.5em; margin-bottom: 0.5em; }
+        .prose h1 { font-size: 2.25rem; color: #38bdf8; text-align: center; }
+        .prose h2 { font-size: 1.5rem; border-bottom: 1px solid #334155; padding-bottom: 0.3em; }
+        .prose h3 { font-size: 1.25rem; color: #94a3b8; }
+        .prose p, .prose li { margin-bottom: 1em; line-height: 1.6; }
+        .prose ul, .prose ol { padding-left: 1.5em; margin-bottom: 1em; }
+        .prose ul { list-style-type: disc; }
+        .prose ol { list-style-type: decimal; }
+        .prose strong { color: #f8fafc; font-weight: 800; }
+        .prose blockquote { background: #1e293b; border-left: 4px solid #facc15; padding: 1em; margin: 1em 0; border-radius: 8px; }
+        .prose hr { border-color: #334155; margin: 2em 0; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-3xl mx-auto bg-slate-800 p-6 md:p-10 rounded-2xl shadow-2xl border border-slate-700">
+        <div id="content" class="prose"></div>
+        <div class="mt-8 text-center pt-6 border-t border-slate-700">
+            <button onclick="window.close()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 rounded-lg transition">Fechar Manual</button>
+        </div>
+    </div>
+    
+    <script type="text/markdown" id="md-content">
+## 🛠️ Manual do Parceiro (Estabelecimento)
+
+### 1. Acesso ao Painel
+- Acesse o link do painel administrativo fornecido pela AppSolutions76.
+- Faça o login com seu E-mail e Senha. Caso não tenha conta, clique em **Criar Conta** preenchendo seus dados.
+
+### 2. Configurando o Recebimento (Mercado Pago)
+Para que o dinheiro dos clientes caia direto na sua conta, é obrigatório vincular o Mercado Pago.
+1. No painel, vá até a seção **Conta Mercado Pago**.
+2. Clique no botão azul **🤝 Vincular Conta Mercado Pago**.
+3. Você será redirecionado para o site do Mercado Pago. Faça login e autorize o aplicativo.
+4. Ao retornar ao painel, o status mudará para **✅ Conectado ao Mercado Pago**.
+
+### 3. Personalizando o Aplicativo
+Deixe a Roleta com a cara do seu negócio!
+1. Vá em **Personalização do App Cliente**.
+2. **Cor Principal:** Escolha a cor que mais combina com seu estabelecimento.
+3. **URL do Fundo / Logo:** Cole os links de imagens hospedadas na internet para personalizar o fundo e a logomarca da tela do cliente.
+4. Clique em **Salvar Personalização**.
+
+### 4. Cadastrando Prêmios Maiores
+1. Na seção **Meus Prêmios**, clique em **+ Novo Prêmio**.
+2. Preencha o Nome do prêmio (ex: *Balde de Heineken*).
+3. **Custo Real:** Quanto o prêmio custa para você no cardápio.
+4. **Valor da Aposta:** Quanto o cliente paga por giro para tentar ganhar esse prêmio.
+5. Clique em **Salvar**.
+
+> **Dica de Estratégia:** O Valor da Aposta deve ser bem menor que o Custo Real (recomendado entre 10% a 20% do valor do produto) para incentivar o cliente a jogar.
+
+### 5. Configurando a Consolação (Prêmios Menores)
+Se o cliente não ganhar o prêmio principal, ele ganha um prêmio de consolação para não sair de mãos vazias.
+1. Na seção **Configurações de Consolação**, digite os prêmios menores separados por vírgula (Ex: *Amendoim, Shot de Pinga, Bala*).
+2. Defina a **Taxa de Consolação (R$)**: um pequeno valor descontado do seu faturamento líquido para cobrir esses prêmios menores (o cliente não paga a mais por isso).
+3. Clique em **Salvar Configurações**.
+
+### 6. Disponibilizando a Roleta para o Cliente
+1. No topo do painel, clique em **Ver QR Code da Roleta**.
+2. Um QR Code aparecerá na tela. Você pode mostrá-lo em um tablet, imprimi-lo e colocar nas mesas, ou clicar em **Copiar Link** para enviar aos clientes via WhatsApp.
+
+### 7. Validando Prêmios (Entregando ao Cliente)
+Quando um cliente ganha, ele vai até o balcão (ou chama o garçom) com a tela do celular.
+1. **Pela Câmera (Recomendado):** Vá na seção **Validação de Prêmios** e clique em **ABRIR CÂMERA DO GARÇOM**. Aponte para o QR Code na tela do cliente. Confirme a entrega na tela.
+2. **Pelo Código Manual (Plano B):** Se a câmera falhar, peça ao cliente os **4 caracteres** que aparecem embaixo do QR Code dele. Digite no campo de "Código Manual" e clique em Verificar.
+
+> **⚠️ AVISO DE SEGURANÇA (Anti-Fraude):** O sistema avisa imediatamente se alguém tentar usar um print falso ou resgatar o mesmo prêmio duas vezes. Nunca entregue o prêmio sem validar no seu painel!
+
+### 8. Abrindo e Fechando a Roleta
+- No topo do seu painel, há o status do estabelecimento. 
+- Clique no botão para alternar entre **ABERTO** (clientes podem jogar) e **FECHADO** (a roleta fica pausada e ninguém consegue pagar/girar).
+    </script>
+    <script>
+        document.getElementById('content').innerHTML = marked.parse(document.getElementById('md-content').textContent);
+    </script>
+</body>
+</html>

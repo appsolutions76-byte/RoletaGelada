@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Como Jogar - Roleta Gelada</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body { background: #0f172a; color: #e2e8f0; }
+        .prose h1, .prose h2, .prose h3 { color: #f8fafc; font-weight: bold; margin-top: 1.5em; margin-bottom: 0.5em; }
+        .prose h1 { font-size: 2.25rem; color: #38bdf8; text-align: center; }
+        .prose h2 { font-size: 1.5rem; border-bottom: 1px solid #334155; padding-bottom: 0.3em; }
+        .prose h3 { font-size: 1.25rem; color: #94a3b8; }
+        .prose p, .prose li { margin-bottom: 1em; line-height: 1.6; }
+        .prose ul, .prose ol { padding-left: 1.5em; margin-bottom: 1em; }
+        .prose ul { list-style-type: disc; }
+        .prose ol { list-style-type: decimal; }
+        .prose strong { color: #f8fafc; font-weight: 800; }
+        .prose blockquote { background: #1e293b; border-left: 4px solid #facc15; padding: 1em; margin: 1em 0; border-radius: 8px; }
+        .prose hr { border-color: #334155; margin: 2em 0; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-3xl mx-auto bg-slate-800 p-6 md:p-10 rounded-2xl shadow-2xl border border-slate-700">
+        <div id="content" class="prose"></div>
+        <div class="mt-8 text-center pt-6 border-t border-slate-700">
+            <button onclick="window.close()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 rounded-lg transition">Fechar Manual</button>
+        </div>
+    </div>
+    
+    <script type="text/markdown" id="md-content">
+## 🎲 Como Jogar (Manual do Cliente)
+
+Jogar na Roleta Gelada é rápido e fácil! Siga os passos:
+
+### 1. Acessando o Jogo
+- Aponte a câmera do seu celular para o **QR Code** disponível no estabelecimento (nas mesas, tótens ou no balcão) ou clique no link enviado pelo estabelecimento.
+
+### 2. Escolhendo o Prêmio
+- Ao abrir o app, você verá os prêmios disponíveis no estabelecimento e o valor da aposta de cada um.
+- Selecione o prêmio que deseja tentar ganhar.
+
+### 3. Pagando para Girar
+1. Clique no botão de **Pagar e Girar**.
+2. O sistema vai gerar um **Código PIX Copia e Cola**.
+3. Clique em **Copiar PIX** e abra o aplicativo do seu banco.
+4. Faça o pagamento (área Pix Copia e Cola).
+5. Volte para a tela da Roleta. O sistema identificará o pagamento automaticamente em poucos segundos!
+
+### 4. A Roleta Gira!
+- Assim que o pagamento for confirmado, **você deve clicar para girar a roleta e depois clicar para pará-la dentro de 10 segundos**. Boa sorte!
+- Você pode ganhar o prêmio principal que escolheu, ou um prêmio surpresa de consolação!
+
+### 5. Resgatando seu Prêmio
+Seja o prêmio principal ou de consolação, veja como resgatar:
+1. A tela de vitória aparecerá no seu celular, mostrando o que você ganhou e um **QR Code de Resgate**.
+2. Chame o garçom ou vá ao balcão.
+3. Mostre a tela com o QR Code para o funcionário do estabelecimento. Ele fará a leitura para confirmar a validade.
+4. Aproveite o seu prêmio! 🍻
+
+> **Importante:** Tire um "print" (captura de tela) da sua vitória mostrando o QR Code ou o código de 4 dígitos! Você pode apresentar esse print ao garçom sem problemas. O aplicativo possui um **Sistema Anti-Fraude** seguro que garante que cada prêmio só possa ser resgatado uma única vez.
+    </script>
+    <script>
+        document.getElementById('content').innerHTML = marked.parse(document.getElementById('md-content').textContent);
+    </script>
+</body>
+</html>
