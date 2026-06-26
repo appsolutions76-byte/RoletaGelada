@@ -75,7 +75,7 @@ Jogar na Roleta Gelada é rápido e fácil! Siga os passos:
 5. Volte para a tela da Roleta. O sistema identificará o pagamento automaticamente em poucos segundos!
 
 ### 4. A Roleta Gira!
-- Assim que o pagamento for confirmado, a roleta gira sozinha. Boa sorte!
+- Assim que o pagamento for confirmado, **você deve clicar para girar a roleta e depois clicar para pará-la dentro de 10 segundos**. Boa sorte!
 - Você pode ganhar o prêmio principal que escolheu, ou um prêmio surpresa de consolação!
 
 ### 5. Resgatando seu Prêmio
