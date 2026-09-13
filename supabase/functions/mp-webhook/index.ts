@@ -13,12 +13,12 @@ serve(async (req) => {
 
   try {
     const url = new URL(req.url);
-    const topic = url.searchParams.get("topic") || url.searchParams.get("type");
+    const topic = url.searchParams.get("topic") || url.searchParams.get("type") || "payment";
     const id = url.searchParams.get("id") || url.searchParams.get("data.id");
     const externalRef = url.searchParams.get("external_reference");
 
-    // Allow mock testing from frontend using external_reference
-    if (topic === "payment" && (id || externalRef)) {
+    // Allow mock testing or real MP webhooks using external_reference or payment topic
+    if ((topic.includes("payment") || topic.includes("merchant_order")) && (id || externalRef)) {
       const supabaseClient = createClient(
         Deno.env.get('SUPABASE_URL') ?? '',
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''

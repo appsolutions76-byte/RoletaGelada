@@ -572,17 +572,17 @@
 
         async function connectMercadoPago() {
             try {
-                // Fetch the public MP_CLIENT_ID from platform settings (or backend if we expose it)
-                // For simplicity, we can fetch it securely from our edge function or platform settings.
-                // Mas, como a chave do CLIENT_ID é pública (ela fica visível no login do MP),
-                // o ideal é pegar da variável de ambiente do Supabase ou você adicionar no painel Master.
-                // Como isso vai pra produção, vou deixar uma constante que precisa ser trocada pelo parceiro ou lida de platform_settings.
+                let clientId = "97076298433170"; // Fallback padrão
+                if (supabaseClient) {
+                    try {
+                        const { data: settings } = await supabaseClient.from('platform_settings').select('mp_client_id').limit(1).maybeSingle();
+                        if (settings && settings.mp_client_id) {
+                            clientId = settings.mp_client_id;
+                        }
+                    } catch(e){}
+                }
                 
-                // Opção 1: Buscar do platform_settings se você decidir salvar o Client ID lá.
-                // Opção 2: Hardcoded
-                const clientId = "97076298433170"; // <-- Seu N.º da Aplicação (Client ID)
-                
-                if (clientId === "SEU_CLIENT_ID_AQUI") {
+                if (!clientId || clientId === "SEU_CLIENT_ID_AQUI") {
                     alert("Atenção: O sistema Mercado Pago não está configurado ainda. O Administrador Master precisa preencher o CLIENT_ID.");
                     return;
                 }

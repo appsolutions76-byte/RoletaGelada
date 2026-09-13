@@ -10,6 +10,7 @@
             navigator.serviceWorker.register('./sw.js');
         }
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     
     <style>
@@ -300,6 +301,8 @@
                                     document.getElementById('pix-area').classList.remove('hidden');
                                     document.getElementById('qr-container').innerHTML = '<p class="text-sm text-gray-400 mt-4 text-center">Aguardando pagamento no app do seu banco...</p>';
                                     
+                                    listenPaymentRealtime(pending.roundId);
+
                                     state.pollingInterval = setInterval(async () => {
                                         try {
                                             const r = await sfetch(`/rest/v1/rounds?id=eq.${pending.roundId}&select=status`);
@@ -387,6 +390,38 @@
             document.getElementById('lbl-bet').innerText = state.prizeBet.toFixed(2);
         }
 
+        let supabaseClient = null;
+        try {
+            if (window.supabase) {
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, ANON_KEY);
+            }
+        } catch(e) { console.error("Supabase Realtime init error:", e); }
+
+        function listenPaymentRealtime(roundId) {
+            if (!supabaseClient) return null;
+            try {
+                const channel = supabaseClient.channel(`round-payment-${roundId}`)
+                    .on('postgres_changes', {
+                        event: 'UPDATE',
+                        schema: 'public',
+                        table: 'rounds',
+                        filter: `id=eq.${roundId}`
+                    }, (payload) => {
+                        if (payload.new && payload.new.status === 'paid') {
+                            if (state.pollingInterval) clearInterval(state.pollingInterval);
+                            supabaseClient.removeChannel(channel);
+                            localStorage.removeItem('rg_pending_round');
+                            startRoulette();
+                        }
+                    })
+                    .subscribe();
+                return channel;
+            } catch(e) {
+                console.error("Realtime subscription error:", e);
+                return null;
+            }
+        }
+
         async function generatePix() {
             const btn = document.getElementById('btn-gerar-pix');
             btn.disabled = true; btn.innerText = "Gerando...";
@@ -421,16 +456,19 @@
                     document.getElementById('pix-area').appendChild(mockBtn);
                 }
 
-                // Polling simplificado para verificar se foi pago (para Pix Real)
+                // Inicia escuta via Realtime + Polling como fallback
                 if(!data.qr_code.startsWith('MOCK')) {
                     document.getElementById('pix-copy-area').classList.remove('hidden');
                     document.getElementById('pix-copia-cola').value = data.qr_code;
                     
+                    listenPaymentRealtime(state.roundId);
+
                     state.pollingInterval = setInterval(async () => {
                         try {
                             const rounds = await sfetch(`/rest/v1/rounds?id=eq.${state.roundId}&select=status`);
                             if(rounds && rounds[0] && rounds[0].status === 'paid') {
                                 clearInterval(state.pollingInterval);
+                                localStorage.removeItem('rg_pending_round');
                                 startRoulette();
                             }
                         } catch(e){}
@@ -447,7 +485,17 @@
             const input = document.getElementById('pix-copia-cola');
             input.select();
             input.setSelectionRange(0, 99999);
-            navigator.clipboard.writeText(input.value);
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(input.value).catch(() => {
+                        document.execCommand('copy');
+                    });
+                } else {
+                    document.execCommand('copy');
+                }
+            } catch(e) {
+                document.execCommand('copy');
+            }
             const msg = document.getElementById('copy-msg');
             msg.classList.remove('hidden');
             setTimeout(() => msg.classList.add('hidden'), 2000);
